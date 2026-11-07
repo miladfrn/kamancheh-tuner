@@ -125,7 +125,7 @@
   button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
-  #postStart #stopBtn { flex: 0 0 auto; }
+  #postStart #stopBtn, #postStart #pauseBtn { flex: 0 0 auto; }
   #refindBtn { flex: 0 0 auto; padding: 8px 10px; }
   #liveNote { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
   #liveNoteName { font-weight: 600; font-size: 32px; transition: color 120ms ease; flex: 0 0 auto; }
@@ -188,7 +188,7 @@
   #contourCanvas, #staffCanvas { position: absolute; top: 0; left: 0; height: 100%; display: block; }
   #timeAxisCanvas { flex: 0 0 18px; display: block; border-top: 1px solid var(--line); }
 
-  #zoomControls { position: absolute; top: 8px; left: 10px; z-index: 3; display: flex; gap: 4px; }
+  #zoomControls { position: absolute; top: 8px; left: 39px; z-index: 3; display: flex; gap: 4px; }
   #zoomControls button { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 13px; background: #1c1813dd; }
 
   #liveBtn {
@@ -277,6 +277,9 @@
           <span id="liveNoteCents">0¢</span>
           <span id="liveNoteFreq">0Hz</span>
         </div>
+        <button id="pauseBtn" class="startBtn">
+          <span class="l1" id="pauseLabel">Pause</span><span class="l2">rec</span>
+        </button>
         <button id="stopBtn" class="primary startBtn">
           <span class="l1">Stop</span><span class="l2">mic</span>
         </button>
@@ -289,7 +292,7 @@
     </div>
 
     <div id="scopeOuter">
-      <div id="scopeGutter" hidden>
+      <div id="scopeGutter">
         <div id="scopeGutterNums">
           <span>40</span><span>30</span><span>20</span><span>10</span><span>0</span><span>-10</span><span>-20</span><span>-30</span><span>-40</span>
         </div>
@@ -387,7 +390,7 @@
   var beatUp = $("beatUp"), beatDown = $("beatDown"), beatNum = $("beatNum");
   var startManual = $("startManual"), startManualLabel = $("startManualLabel");
   var startAuto = $("startAuto"), startAutoLabel = $("startAutoLabel"), startAutoLabel2 = $("startAutoLabel2");
-  var stopBtn = $("stopBtn"), refindBtn = $("refindBtn");
+  var stopBtn = $("stopBtn"), pauseBtn = $("pauseBtn"), pauseLabel = $("pauseLabel"), refindBtn = $("refindBtn");
   var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents"), liveNoteFreq = $("liveNoteFreq");
 
   var tabStaff = $("tabStaff"), tabContour = $("tabContour");
@@ -397,7 +400,7 @@
   var timeAxisCanvas = $("timeAxisCanvas"), timeAxisCtx = timeAxisCanvas.getContext("2d");
   var scopeCanvases = $("scopeCanvases");
   var scopeScroll = $("scopeScroll"), scopeInner = $("scopeInner"), liveBtn = $("liveBtn");
-  var zoomIn = $("zoomIn"), zoomOut = $("zoomOut"), zoomControls = $("zoomControls");
+  var zoomIn = $("zoomIn"), zoomOut = $("zoomOut");
   var a4down = $("a4down"), a4up = $("a4up");
   var rollToggle = $("rollToggle"), pitchScaleToggle = $("pitchScaleToggle");
 
@@ -437,13 +440,13 @@
   // ---------- tabs ----------
   var activeTab = "staff";
   function updateGutterAndOffsets() {
-    var showGutter = activeTab === "contour" || (activeTab === "staff" && pitchScaled);
-    scopeGutter.hidden = !showGutter;
+    // gutter is always visible now: cents numbers on Contour, note names
+    // (at equal or pitch-scaled spacing) on Staff
+    scopeGutter.hidden = false;
     scopeGutterNums.hidden = activeTab !== "contour";
-    scopeGutterNotes.hidden = !(activeTab === "staff" && pitchScaled);
-    zoomControls.style.left = (showGutter ? 39 : 10) + "px";
+    scopeGutterNotes.hidden = activeTab !== "staff";
     pitchScaleToggle.hidden = activeTab !== "staff";
-    if (activeTab === "staff" && pitchScaled) renderGutterNotes();
+    if (activeTab === "staff") renderGutterNotes();
     fitScopes();
     if (activeTab === "staff") drawStaff(); else drawContour();
     drawTimeAxis();
@@ -514,12 +517,14 @@
   function beginSession(msg) {
     if (!sessionStarted) resetSessionData();
     sessionStarted = true;
+    sessionPaused = false;
     preStart.hidden = true;
     postStart.hidden = false;
     setStatus(msg || ("Session started at " + bpm + " bpm."));
   }
   function endSession() {
     sessionStarted = false;
+    sessionPaused = false;
     autoFinding = false;
     resetSessionData();
     preStart.hidden = false;
@@ -533,6 +538,12 @@
     micRunning = false;
     endSession();
     setStatus("Stopped.");
+  });
+  pauseBtn.addEventListener("click", function () {
+    sessionPaused = !sessionPaused;
+    pauseBtn.classList.toggle("on", sessionPaused);
+    pauseLabel.textContent = sessionPaused ? "Resume" : "Pause";
+    setStatus(sessionPaused ? "Paused — mic still listening, nothing new is being recorded." : "Resumed.");
   });
 
   // ---------- committed-note smoothing (kills frame jitter + octave-error spikes) ----------
@@ -604,6 +615,7 @@
   var lastDotPc = null;
 
   var sessionStarted = false;
+  var sessionPaused = false;
   var panelH = 0;
   var AXIS_H = 18;
   var followMode = true, lastProgScrollAt = 0;
@@ -680,7 +692,7 @@
       var midi = stepToMidi(step);
       var el = document.createElement("span");
       el.className = "gutterNoteLabel";
-      el.style.top = pitchScaleY(midi) + "px";
+      el.style.top = (pitchScaled ? pitchScaleY(midi) : staffY(midi)) + "px";
       el.textContent = noteLabel(midi);
       scopeGutterNotes.appendChild(el);
     });
@@ -949,30 +961,33 @@
     if (sessionStarted) {
       if (lastFrameNow === null) lastFrameNow = now;
       var dt = now - lastFrameNow;
-      lastFrameNow = now;
-      if (rollWithTime || soundActive) activeMs += dt;
+      lastFrameNow = now; // keeps ticking even while paused, so resume doesn't jump the timeline
 
-      if (soundActive && committedMidi !== null) {
-        if (!curSegment || curSegment.midi !== committedMidi) {
-          if (curSegment) segments.push(curSegment);
-          curSegment = { midi: committedMidi, points: [] };
+      if (!sessionPaused) {
+        if (rollWithTime || soundActive) activeMs += dt;
+
+        if (committedMidi !== null) {
+          if (!curSegment || curSegment.midi !== committedMidi) {
+            if (curSegment) segments.push(curSegment);
+            curSegment = { midi: committedMidi, points: [] };
+          }
+          curSegment.points.push({ ms: activeMs, cents: committedCentsEMA });
+          if (curSegment.points.length > 400) curSegment.points.shift();
+
+          var curPc = pc(committedMidi);
+          var acc = false;
+          if (curPc !== lastDotPc) { acc = SHARP_BY_PC[curPc]; lastDotPc = curPc; }
+          scatterPoints.push({ ms: activeMs, midi: committedMidi, cents: committedCentsEMA, acc: acc });
+          if (scatterPoints.length > 20000) scatterPoints.shift();
         }
-        curSegment.points.push({ ms: activeMs, cents: committedCentsEMA });
-        if (curSegment.points.length > 400) curSegment.points.shift();
 
-        var curPc = pc(committedMidi);
-        var acc = false;
-        if (curPc !== lastDotPc) { acc = SHARP_BY_PC[curPc]; lastDotPc = curPc; }
-        scatterPoints.push({ ms: activeMs, midi: committedMidi, cents: committedCentsEMA, acc: acc });
-        if (scatterPoints.length > 20000) scatterPoints.shift();
+        windowStart = Math.max(0, activeMs - MAX_SECONDS * 1000);
+        var cutoff = windowStart - 2000;
+        while (segments.length && segments[0].points.length && segments[0].points[segments[0].points.length - 1].ms < cutoff) segments.shift();
+        while (scatterPoints.length && scatterPoints[0].ms < cutoff) scatterPoints.shift();
+
+        resizeCanvasesToWidth(Math.max(scopeScroll.clientWidth, usedWidthPx()));
       }
-
-      windowStart = Math.max(0, activeMs - MAX_SECONDS * 1000);
-      var cutoff = windowStart - 2000;
-      while (segments.length && segments[0].points.length && segments[0].points[segments[0].points.length - 1].ms < cutoff) segments.shift();
-      while (scatterPoints.length && scatterPoints[0].ms < cutoff) scatterPoints.shift();
-
-      resizeCanvasesToWidth(Math.max(scopeScroll.clientWidth, usedWidthPx()));
     }
 
     if (activeTab === "staff") drawStaff(); else drawContour();
