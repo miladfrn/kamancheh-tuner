@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14110f">
-<title>Kamancheh Tuner</title>
+<meta name="theme-color" content="#0b1424">
+<title>Tuner</title>
+<link rel="icon" href="logo.png">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,14 +24,14 @@
     Type: Spectral (display, serif) + JetBrains Mono (numbers).
   */
   :root {
-    --bg: #14110f;
-    --panel: #1c1813;
-    --panel-2: #241e17;
-    --line: #3a3024;
-    --fg: #f2ead9;
-    --fg-dim: #a89a80;
+    --bg: #0b1424;
+    --panel: #13213c;
+    --panel-2: #1a2c4d;
+    --line: #2e4269;
+    --fg: #eef3fb;
+    --fg-dim: #8ca0c4;
     --accent: #c98a3a;
-    --string: #7a9b7e;
+    --string: #7ab08f;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -57,8 +58,9 @@
     gap: 8px;
     flex: 0 0 auto;
   }
+  #brand { display: flex; align-items: center; gap: 8px; }
+  #logo { width: 34px; height: auto; display: block; flex: 0 0 auto; }
   header h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
-  header h1 span { color: var(--accent); }
   header .right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
   .headerPill {
     font-size: 11px; color: var(--fg-dim); background: var(--panel);
@@ -101,7 +103,7 @@
     align-items: center;
     gap: 10px;
   }
-  #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+  #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 216px; }
   button.startBtn {
     flex: 1 1 0;
     min-width: 0;
@@ -114,17 +116,18 @@
   button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
-  #liveNote { flex: 0 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
+  #liveNote { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; }
   #liveNoteName { font-weight: 600; font-size: 32px; transition: color 120ms ease; flex: 0 0 auto; }
   #liveNoteName sup { font-size: 0.48em; vertical-align: 55%; }
   #liveNoteName sub { font-size: 0.48em; vertical-align: -15%; }
+  #liveNoteStack { display: flex; flex-direction: column; gap: 1px; flex: 0 0 auto; line-height: 1.15; }
   #liveNoteCents {
-    font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 19px;
-    color: var(--fg); flex: 0 0 auto;
+    font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 17px;
+    color: var(--fg);
   }
   #liveNoteFreq {
     font-family: 'JetBrains Mono', monospace; font-weight: 300; font-size: 11px;
-    color: var(--fg-dim); flex: 0 0 auto;
+    color: var(--fg-dim);
   }
 
   /* ---- bottom status bar ---- */
@@ -176,7 +179,7 @@
   #timeAxisCanvas { flex: 0 0 18px; display: block; border-top: 1px solid var(--line); }
 
   #zoomControls { position: absolute; top: 8px; left: 39px; z-index: 3; display: flex; gap: 4px; }
-  #zoomControls button { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 13px; background: #1c1813dd; }
+  #zoomControls button { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 13px; background: #13213cdd; }
 
   #liveBtn {
     position: absolute; right: 10px; bottom: 26px; z-index: 3;
@@ -190,7 +193,7 @@
     position: absolute; top: 40px; right: 10px; z-index: 3;
     font-size: 9.5px; padding: 6px 10px;
   }
-  #liveBtn:not(.on), #rollToggle:not(.on), #pitchScaleToggle:not(.on) { background: #1c1813dd; }
+  #liveBtn:not(.on), #rollToggle:not(.on), #pitchScaleToggle:not(.on) { background: #13213cdd; }
 
   button {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
@@ -222,7 +225,10 @@
 <div id="app">
 
   <header>
-    <h1>Kaman<span>cheh</span> Tuner</h1>
+    <div id="brand">
+      <img id="logo" src="logo.png" alt="">
+      <h1>Tuner</h1>
+    </div>
     <div class="right">
       <div id="a4" class="headerPill">
         <span>A4</span>
@@ -244,8 +250,10 @@
     <div id="controlBar">
       <div id="liveNote">
         <span id="liveNoteName">–</span>
-        <span id="liveNoteCents">0¢</span>
-        <span id="liveNoteFreq">0Hz</span>
+        <div id="liveNoteStack">
+          <span id="liveNoteCents">0¢</span>
+          <span id="liveNoteFreq">0Hz</span>
+        </div>
       </div>
       <div id="preStart">
         <button id="startManual" class="primary startBtn">
@@ -707,7 +715,7 @@
     }
 
     // 3 faint ledger-guide lines each side, always visible
-    staffCtx.strokeStyle = "#f2ead933";
+    staffCtx.strokeStyle = "#eef3fb33";
     staffCtx.setLineDash([3, 4]);
     staffCtx.lineWidth = 1;
     [ -6, -4, -2, 10, 12, 14 ].forEach(function (step) {
@@ -717,7 +725,7 @@
     staffCtx.setLineDash([]);
 
     // 5 staff lines
-    staffCtx.strokeStyle = "#f2ead966";
+    staffCtx.strokeStyle = "#eef3fb66";
     staffCtx.lineWidth = 1;
     [0, 2, 4, 6, 8].forEach(function (step) {
       var y = lineY(step);
@@ -725,7 +733,7 @@
     });
 
     // dots: snapped to the nearest note's line, or plotted at true continuous pitch
-    staffCtx.fillStyle = "#f2ead9";
+    staffCtx.fillStyle = "#eef3fb";
     for (var n = 0; n < scatterPoints.length; n++) {
       var p = scatterPoints[n];
       var x = xOf(p.ms);
@@ -771,14 +779,14 @@
       var x0 = xOf(seg.points[0].ms);
       var x1 = xOf(seg.points[seg.points.length - 1].ms);
       if (x1 < -20 || x0 > w + 20) continue;
-      contourCtx.strokeStyle = "#f2ead9";
+      contourCtx.strokeStyle = "#eef3fb";
       contourCtx.beginPath();
       for (var p = 0; p < seg.points.length; p++) {
         var px = xOf(seg.points[p].ms), py = yOfCents(seg.points[p].cents);
         if (p === 0) contourCtx.moveTo(px, py); else contourCtx.lineTo(px, py);
       }
       contourCtx.stroke();
-      contourCtx.fillStyle = "#f2ead9";
+      contourCtx.fillStyle = "#eef3fb";
       contourCtx.fillText(noteLabel(seg.midi), Math.max(2, x0 + 3), Math.max(12, yOfCents(seg.points[0].cents) - 7));
     }
   }
@@ -801,8 +809,8 @@
     timeAxisCtx.clearRect(0, 0, w, h);
     var intervalMs = pickTickIntervalSec() * 1000;
     var firstK = Math.floor(windowStart / intervalMs);
-    timeAxisCtx.strokeStyle = "#f2ead955";
-    timeAxisCtx.fillStyle = "#a89a80";
+    timeAxisCtx.strokeStyle = "#eef3fb55";
+    timeAxisCtx.fillStyle = "#8ca0c4";
     timeAxisCtx.font = "500 9px 'JetBrains Mono', monospace";
     timeAxisCtx.textAlign = "center";
     for (var k = firstK; k < firstK + 100000; k++) {
