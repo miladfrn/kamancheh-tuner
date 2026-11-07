@@ -13,12 +13,14 @@
   /*
     Layout: two stacked, horizontally scrollable panels on a shared rolling
     4-minute timeline — a SoundCorset-style cents/pitch contour on top, a
-    real 5-line staff (noteheads with duration symbols + ledger lines)
-    below. A thin transport strip pins to the bottom.
+    compact real 5-line staff (noteheads with duration symbols + ledger
+    lines) below. The panels fill nearly the whole screen in both
+    orientations; the current note/cents reading floats as a small badge
+    in the top-right corner instead of taking a dedicated block.
     Color: warm dark wood/strings palette. Contour and staff notation are
     deliberately single-color (neutral) — there is no expected score to
-    compare against, so only rhythm (on/off the metronome beat) gets the
-    red/white judgement, and only on the staff noteheads.
+    compare against, so only rhythm (on/off the beat) gets the red/white
+    judgement, and only on the staff noteheads.
     Type: Spectral (display, serif) + JetBrains Mono (numbers).
   */
   :root {
@@ -26,9 +28,6 @@
     --panel: #1c1813;
     --panel-2: #241e17;
     --line: #3a3024;
-    --grid: #ffffff14;
-    --grid-strong: #ffffff22;
-    --band: #c98a3a1f;
     --fg: #f2ead9;
     --fg-dim: #a89a80;
     --accent: #c98a3a;
@@ -71,12 +70,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 8px;
+    padding: max(8px, env(safe-area-inset-top, 0px)) 16px 6px;
     gap: 8px;
     flex: 0 0 auto;
   }
   header h1 {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 600;
     margin: 0;
     letter-spacing: 0.01em;
@@ -111,42 +110,13 @@
     font-size: 14px; padding: 0;
   }
 
-  /* ---- main pitch display ---- */
   #main {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 0 16px;
-    gap: 8px;
+    padding: 0 16px 8px;
   }
-
-  #gaugeWrap {
-    position: relative;
-    flex: 0 0 auto;
-    padding-top: 4px;
-  }
-  #noteRow {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 14px;
-  }
-  #noteName {
-    font-size: min(14vw, 92px);
-    line-height: 1;
-    font-weight: 600;
-    transition: color 120ms ease;
-  }
-  #cents {
-    text-align: center;
-    font-size: 14px;
-    color: var(--fg-dim);
-    margin-top: -4px;
-  }
-  #cents b { color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 16px; }
-
-  #needleSvg { width: 100%; height: 40px; display: block; }
 
   /* ---- two scrollable timeline panels ---- */
   #scopeOuter {
@@ -206,26 +176,70 @@
   #contourCanvas { flex: 0 0 58%; display: block; }
   #staffCanvas { flex: 1 1 auto; display: block; border-top: 1px solid var(--line); }
 
+  /* ---- floating overlays on the scope panel ---- */
+  #noteBadge {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 3;
+    background: #1c1813dd;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 4px 12px 6px;
+    text-align: center;
+    pointer-events: none;
+  }
+  #noteBadge #noteName {
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.1;
+    transition: color 120ms ease;
+    display: block;
+  }
+  #noteBadge .centsRow {
+    font-size: 11px;
+    color: var(--fg-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #noteBadge #centsVal { color: var(--fg); font-weight: 700; }
+
   #scopeLegend {
     position: absolute;
-    top: 6px;
+    top: 58px;
     right: 10px;
-    font-size: 9.5px;
+    z-index: 3;
+    font-size: 9px;
     color: var(--fg-dim);
     display: flex;
-    gap: 8px;
+    gap: 7px;
     pointer-events: none;
     background: #1c1813cc;
     padding: 2px 6px;
     border-radius: 6px;
   }
   #scopeLegend span { display: flex; align-items: center; gap: 3px; }
-  #scopeLegend i { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
+  #scopeLegend i { width: 6px; height: 6px; border-radius: 2px; display: inline-block; }
+
+  #zoomControls {
+    position: absolute;
+    top: 8px;
+    left: 38px;
+    z-index: 3;
+    display: flex;
+    gap: 4px;
+  }
+  #zoomControls button {
+    width: 26px; height: 26px; padding: 0;
+    justify-content: center;
+    font-size: 13px;
+    background: #1c1813dd;
+  }
 
   #liveBtn {
     position: absolute;
     right: 10px;
     bottom: 8px;
+    z-index: 3;
     font-size: 10px;
     padding: 6px 10px;
   }
@@ -261,7 +275,6 @@
   button:active { transform: scale(0.97); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #1c1200; font-weight: 700; }
   button.on { background: var(--string); border-color: var(--string); color: #0e160f; }
-  button.danger.on { background: var(--bad); border-color: var(--bad); color: #220a06; }
   button:disabled { opacity: 0.4; }
   button.icon { padding: 9px; width: 38px; justify-content: center; flex: 0 0 auto; }
   button.ghost { background: transparent; }
@@ -278,28 +291,13 @@
     transition: background 60ms ease, transform 60ms ease;
   }
   #beatDots i.hit { background: var(--accent); transform: scale(1.35); }
-
-  #abBar {
-    position: relative;
-    height: 28px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    flex: 1 1 auto;
+  #autoLockDot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line);
+    flex: 0 0 auto;
+    transition: background 150ms ease;
   }
-  #abRegion {
-    position: absolute;
-    top: 0; bottom: 0;
-    background: color-mix(in srgb, var(--accent) 22%, transparent);
-    border-left: 2px solid var(--accent);
-    border-right: 2px solid var(--accent);
-  }
-  #abPlayhead {
-    position: absolute;
-    top: 0; bottom: 0;
-    width: 2px;
-    background: var(--fg);
-  }
+  #autoLockDot.locked { background: var(--string); }
 
   .hint { font-size: 10.5px; color: var(--fg-dim); }
 
@@ -335,17 +333,6 @@
   </header>
 
   <div id="main">
-    <div id="gaugeWrap">
-      <div id="noteRow">
-        <span id="noteName">–</span>
-      </div>
-      <div id="cents">cents off: <b id="centsVal">0</b></div>
-      <svg id="needleSvg" viewBox="0 0 320 60" preserveAspectRatio="xMidYMid meet">
-        <line id="needleTick50" x1="160" y1="6" x2="160" y2="20" stroke="#c98a3a" stroke-width="2"/>
-        <line id="needle" x1="160" y1="2" x2="160" y2="58" stroke="#f2ead9" stroke-width="3" stroke-linecap="round"/>
-      </svg>
-    </div>
-
     <div id="scopeOuter">
       <div id="scopeGutter">
         <div id="centsAxis">
@@ -359,6 +346,15 @@
           <canvas id="staffCanvas"></canvas>
         </div>
       </div>
+
+      <div id="zoomControls">
+        <button id="zoomOut" class="icon" title="Zoom out">−</button>
+        <button id="zoomIn" class="icon" title="Zoom in">+</button>
+      </div>
+      <div id="noteBadge">
+        <span id="noteName">–</span>
+        <span class="centsRow"><span id="centsVal">0</span>¢</span>
+      </div>
       <div id="scopeLegend">
         <span><i style="background:var(--good)"></i>on beat</span>
         <span><i style="background:var(--bad)"></i>off beat</span>
@@ -370,12 +366,11 @@
   <div id="transport">
     <div class="row">
       <button id="micBtn" class="primary">● Start mic</button>
-      <button id="metroBtn" class="icon" title="Metronome">♩</button>
-      <button id="abBtn" class="icon" title="A/B loop">AB</button>
+      <button id="metroBtn" class="icon" title="Metronome click">♩</button>
       <span class="hint" id="hintText">Tap Start mic to begin tuning.</span>
     </div>
 
-    <div class="row" id="bpmRow" hidden>
+    <div class="row" id="bpmRow">
       <div id="bpmBlock">
         <div id="bpmStepper">
           <button id="bpmUp">▲</button>
@@ -383,19 +378,11 @@
         </div>
         <span id="bpmNum" class="mono">90</span>
         <span class="hint">bpm</span>
-        <div id="beatDots"></div>
+        <i id="autoLockDot" title="auto-detected from a steady rhythm"></i>
+        <div id="beatDots" hidden></div>
       </div>
       <button id="tapTempo">Tap</button>
-    </div>
-
-    <div class="row" id="abRow" hidden>
-      <button id="setA" class="icon">A</button>
-      <div id="abBar">
-        <div id="abRegion" style="left:10%;width:40%"></div>
-        <div id="abPlayhead" style="left:10%"></div>
-      </div>
-      <button id="setB" class="icon">B</button>
-      <button id="loopToggle">Loop</button>
+      <button id="resetBeat" title="Forget the detected tempo and relock">Reset</button>
     </div>
   </div>
 
@@ -471,16 +458,17 @@
   var statusEl = $("status"), statusMsg = $("statusMsg"), statusBtn = $("statusBtn");
   var rotateChoice = $("rotateChoice"), rotateYes = $("rotateYes"), rotateNo = $("rotateNo"), rotateToggle = $("rotateToggle");
   var micBtn = $("micBtn"), hintText = $("hintText");
-  var noteName = $("noteName"), centsVal = $("centsVal"), needle = $("needle");
+  var noteName = $("noteName"), centsVal = $("centsVal");
+  var noteBadge = $("noteBadge");
   var contourCanvas = $("contourCanvas"), contourCtx = contourCanvas.getContext("2d");
   var staffCanvas = $("staffCanvas"), staffCtx = staffCanvas.getContext("2d");
   var scopeScroll = $("scopeScroll"), scopeInner = $("scopeInner"), liveBtn = $("liveBtn");
+  var zoomIn = $("zoomIn"), zoomOut = $("zoomOut");
   var a4input = $("a4input");
 
-  var metroBtn = $("metroBtn"), bpmRow = $("bpmRow"), bpmNum = $("bpmNum");
-  var bpmUp = $("bpmUp"), bpmDown = $("bpmDown"), tapTempo = $("tapTempo"), beatDots = $("beatDots");
-  var abBtn = $("abBtn"), abRow = $("abRow"), abBar = $("abBar"), abRegion = $("abRegion"), abPlayhead = $("abPlayhead");
-  var setA = $("setA"), setB = $("setB"), loopToggle = $("loopToggle");
+  var metroBtn = $("metroBtn"), bpmNum = $("bpmNum");
+  var bpmUp = $("bpmUp"), bpmDown = $("bpmDown"), tapTempo = $("tapTempo"), resetBeat = $("resetBeat");
+  var beatDots = $("beatDots"), autoLockDot = $("autoLockDot");
 
   a4input.addEventListener("change", function () {
     var v = parseFloat(a4input.value);
@@ -569,10 +557,8 @@
   var committedMidi = null, committedCentsEMA = 0;
   var candidateMidi = null, candidateSince = 0;
   var DEBOUNCE_MS = 90, EMA_ALPHA = 0.35;
-  var noteJustCommitted = false;
 
   function feedPitch(freq, now) {
-    noteJustCommitted = false;
     if (freq <= 0) return;
     var m = 69 + 12 * Math.log2(freq / a4);
     var rounded = Math.round(m);
@@ -581,7 +567,6 @@
 
     if (committedMidi === null) {
       committedMidi = rounded; committedCentsEMA = cents; candidateMidi = null;
-      noteJustCommitted = true;
       return;
     }
     if (rounded === committedMidi) {
@@ -592,7 +577,6 @@
     if (candidateMidi === rounded) {
       if (now - candidateSince >= DEBOUNCE_MS) {
         committedMidi = rounded; committedCentsEMA = cents; candidateMidi = null;
-        noteJustCommitted = true;
       }
     } else {
       candidateMidi = rounded; candidateSince = now;
@@ -614,20 +598,12 @@
     centsVal.textContent = (c > 0 ? "+" : "") + c;
     var inTune = Math.abs(c) <= 8;
     noteName.style.color = inTune ? "var(--string)" : (Math.abs(c) <= 20 ? "var(--fg)" : "var(--bad)");
-
-    var clamped = Math.max(-50, Math.min(50, c));
-    var angle = (clamped / 50) * 70;
-    var rad = (angle - 90) * Math.PI / 180;
-    var cx = 160, cy = 58, len = 54;
-    needle.setAttribute("x2", (cx + len * Math.cos(rad)).toFixed(1));
-    needle.setAttribute("y2", (cy + len * Math.sin(rad)).toFixed(1));
-    needle.setAttribute("stroke", inTune ? "#e8e0cc" : "#d6553f");
   }
 
   // ---------- shared rolling timeline ----------
   var PX_PER_SEC = 32;
+  var PX_PER_SEC_MIN = 10, PX_PER_SEC_MAX = 90;
   var MAX_SECONDS = 240; // 4 minutes
-  var CAP_PX = PX_PER_SEC * MAX_SECONDS;
   var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
   var NOISE_FLOOR = 0.0035;
@@ -636,12 +612,12 @@
   var activeMs = 0, lastFrameNow = null; // activeMs only advances while sound is present
   var windowStart = 0; // ms, left edge of the visible 4-min window
 
-  var segments = [];     // contour runs: {midi, startMs, endMs, cents}
+  var segments = [];     // contour runs: {midi, points:[{ms,cents}]}
   var curSegment = null;
   var staffNotes = [];   // {ms, midi, cents, hit, durBeats}
   var lastOnsetMs = -1;
 
-  var contourW = 0, contourH = 0, staffH = 0;
+  var contourH = 0, staffH = 0;
   var followMode = true, lastProgScrollAt = 0;
 
   function fitScopes() {
@@ -672,13 +648,24 @@
 
   function xOf(ms) { return (ms - windowStart) / 1000 * PX_PER_SEC; }
 
-  // ---------- staff geometry ----------
+  function setZoom(px) {
+    PX_PER_SEC = Math.max(PX_PER_SEC_MIN, Math.min(PX_PER_SEC_MAX, px));
+    lastCanvasWidthPx = -1; // force resize
+    resizeCanvasesToWidth(Math.max(scopeScroll.clientWidth, usedWidthPx()));
+  }
+  zoomIn.addEventListener("click", function () { setZoom(PX_PER_SEC * 1.35); });
+  zoomOut.addEventListener("click", function () { setZoom(PX_PER_SEC / 1.35); });
+
+  // ---------- staff geometry (compact, fixed spacing; room for 2 ledger lines each side) ----------
   function staffLayout() {
-    var pad = 14;
-    var usable = staffH - pad * 2;
-    var spacing = usable / 4; // 5 lines -> 4 gaps
-    var bottomY = staffH - pad;
-    return { spacing: spacing, halfSpacing: spacing / 2, bottomY: bottomY, pad: pad };
+    var halfSpacing = 8;
+    var spacing = halfSpacing * 2;
+    var reserveBelow = 4, reserveAbove = 4; // half-steps reserved for 2 ledger lines each side
+    var contentHalfSteps = 8 + reserveAbove + reserveBelow; // 5 lines span 8 half-steps
+    var contentHeight = contentHalfSteps * halfSpacing;
+    var topPad = Math.max(6, (staffH - contentHeight) / 2);
+    var bottomY = staffH - topPad - reserveBelow * halfSpacing;
+    return { spacing: spacing, halfSpacing: halfSpacing, bottomY: bottomY, pad: topPad };
   }
   function staffY(midi) {
     var g = staffLayout();
@@ -700,20 +687,19 @@
 
   function drawNoteSymbol(ctx, x, y, durBeats, color) {
     var g = staffLayout();
-    var r = Math.max(3.2, g.halfSpacing * 0.62);
+    var r = Math.max(3, g.halfSpacing * 0.62);
     var stemUp = y > g.bottomY - 4 * g.halfSpacing; // below middle line -> stem up
-    var stemLen = g.spacing * 3.4;
+    var stemLen = g.spacing * 3.2;
     var filled = durBeats <= 1;
     var hasStem = durBeats <= 2;
     var flags = durBeats === 0.5 ? 1 : (durBeats === 0.25 ? 2 : 0);
 
     ctx.save();
-    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.4;
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.3;
 
-    // notehead (slightly tilted ellipse, classic notation look)
     ctx.beginPath();
     ctx.ellipse(x, y, r, r * 0.74, -0.35, 0, Math.PI * 2);
-    if (filled) ctx.fill(); else { ctx.lineWidth = 1.6; ctx.stroke(); }
+    if (filled) ctx.fill(); else { ctx.lineWidth = 1.5; ctx.stroke(); }
 
     if (hasStem) {
       var stemX = stemUp ? x + r - 1 : x - r + 1;
@@ -721,20 +707,20 @@
       ctx.beginPath();
       ctx.moveTo(stemX, y);
       ctx.lineTo(stemX, tipY);
-      ctx.lineWidth = 1.3;
+      ctx.lineWidth = 1.2;
       ctx.stroke();
 
       for (var f = 0; f < flags; f++) {
-        var fy = tipY + (stemUp ? f * 6 : -f * 6);
+        var fy = tipY + (stemUp ? f * 5 : -f * 5);
         ctx.beginPath();
         if (stemUp) {
           ctx.moveTo(stemX, fy);
-          ctx.quadraticCurveTo(stemX + 9, fy + 5, stemX + 2, fy + 14);
+          ctx.quadraticCurveTo(stemX + 7, fy + 4, stemX + 1.5, fy + 11);
         } else {
           ctx.moveTo(stemX, fy);
-          ctx.quadraticCurveTo(stemX - 9, fy - 5, stemX - 2, fy - 14);
+          ctx.quadraticCurveTo(stemX - 7, fy - 4, stemX - 1.5, fy - 11);
         }
-        ctx.lineWidth = 1.6;
+        ctx.lineWidth = 1.4;
         ctx.stroke();
       }
     }
@@ -746,7 +732,7 @@
     var step = diatonicStep(midi) - E4_STEP;
     var r = Math.max(5, g.halfSpacing * 1.15);
     ctx.save();
-    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.1; ctx.globalAlpha = 0.85;
     if (step < 0) {
       for (var s = -2; s >= step - (step % 2 === 0 ? 0 : 1); s -= 2) {
         if (s > 0) continue;
@@ -767,7 +753,6 @@
     var g = staffLayout();
     var w = lastCanvasWidthPx;
 
-    // 5 staff lines
     staffCtx.strokeStyle = "#f2ead966";
     staffCtx.lineWidth = 1;
     for (var i = 0; i < 5; i++) {
@@ -786,25 +771,25 @@
       if (SHARP_BY_PC[pc(note.midi)]) {
         staffCtx.save();
         staffCtx.fillStyle = color;
-        staffCtx.font = "600 11px 'JetBrains Mono', monospace";
-        staffCtx.fillText("#", x - g.halfSpacing * 1.9, y + 4);
+        staffCtx.font = "600 10px 'JetBrains Mono', monospace";
+        staffCtx.fillText("#", x - g.halfSpacing * 1.9, y + 3.5);
         staffCtx.restore();
       }
       drawNoteSymbol(staffCtx, x, y, note.durBeats, color);
 
       staffCtx.save();
       staffCtx.fillStyle = "#a89a80";
-      staffCtx.font = "500 9px 'JetBrains Mono', monospace";
+      staffCtx.font = "500 8.5px 'JetBrains Mono', monospace";
       staffCtx.textAlign = "center";
       var cTxt = (note.cents > 0 ? "+" : "") + note.cents;
-      staffCtx.fillText(cTxt, x, g.bottomY + 16);
+      staffCtx.fillText(cTxt, x, g.bottomY + g.halfSpacing * 4 + 14);
       staffCtx.restore();
     }
 
     if (!soundActive && staffNotes.length === 0) {
       staffCtx.fillStyle = "#a89a8099";
       staffCtx.font = "500 11px 'JetBrains Mono', monospace";
-      staffCtx.fillText("notes appear here as you play on the beat", 8, staffH / 2 + 4);
+      staffCtx.fillText("notes appear here as you play", 8, staffH / 2 + 4);
     }
   }
 
@@ -816,11 +801,9 @@
     var top = 4, bandH = h - 8;
     function yOfCents(c) { return top + bandH / 2 - (Math.max(-50, Math.min(50, c)) / 50) * (bandH / 2); }
 
-    // in-tune band (+-10 cents)
     contourCtx.fillStyle = "#c98a3a1f";
     contourCtx.fillRect(0, yOfCents(10), w, yOfCents(-10) - yOfCents(10));
 
-    // grid
     contourCtx.strokeStyle = "#ffffff14";
     contourCtx.lineWidth = 1;
     for (var c = -40; c <= 40; c += 10) {
@@ -832,9 +815,7 @@
       contourCtx.beginPath(); contourCtx.moveTo(gx, top); contourCtx.lineTo(gx, top + bandH); contourCtx.stroke();
     }
 
-    // each committed-note run drawn as its own continuous stroke + label
     contourCtx.lineWidth = 2;
-    contourCtx.strokeStyle = "#f2ead9";
     contourCtx.font = "600 12px 'JetBrains Mono', monospace";
     var allSegs = curSegment ? segments.concat([curSegment]) : segments;
     for (var s = 0; s < allSegs.length; s++) {
@@ -843,6 +824,7 @@
       var x0 = xOf(seg.points[0].ms);
       var x1 = xOf(seg.points[seg.points.length - 1].ms);
       if (x1 < -20 || x0 > w + 20) continue;
+      contourCtx.strokeStyle = "#f2ead9";
       contourCtx.beginPath();
       for (var p = 0; p < seg.points.length; p++) {
         var px = xOf(seg.points[p].ms), py = yOfCents(seg.points[p].cents);
@@ -860,7 +842,7 @@
     }
   }
 
-  // ---------- auto-follow scrolling ----------
+  // ---------- auto-follow scrolling (leaves room beside the note badge) ----------
   scopeScroll.addEventListener("scroll", function () {
     if (performance.now() - lastProgScrollAt < 60) return;
     followMode = false;
@@ -873,21 +855,18 @@
   function followScroll() {
     if (!followMode) return;
     lastProgScrollAt = performance.now();
-    scopeScroll.scrollLeft = scopeScroll.scrollWidth - scopeScroll.clientWidth;
+    var reserve = noteBadge.getBoundingClientRect().width + 20;
+    var visible = Math.max(80, scopeScroll.clientWidth - reserve);
+    var target = lastCanvasWidthPx - visible;
+    scopeScroll.scrollLeft = Math.max(0, Math.min(target, scopeScroll.scrollWidth - scopeScroll.clientWidth));
   }
 
-  // ---------- metronome / rhythm ----------
+  // ---------- rhythm: metronome click + auto tempo detection ----------
   var bpm = 90, metroOn = false, metroTimer = null, nextBeatTime = 0;
   var beatCount = 0, beatSubdiv = 4;
 
-  function renderBeatDots() {
-    beatDots.innerHTML = "";
-    for (var i = 0; i < beatSubdiv; i++) beatDots.appendChild(document.createElement("i"));
-  }
-  renderBeatDots();
-
   function setBpm(v) {
-    bpm = Math.max(30, Math.min(260, v));
+    bpm = Math.max(30, Math.min(260, Math.round(v)));
     bpmNum.textContent = bpm;
   }
   setBpm(90);
@@ -907,14 +886,8 @@
   function metroTick() {
     if (!metroOn) return;
     clickSound();
-    var dots = beatDots.children;
-    var idx = beatCount % beatSubdiv;
-    for (var i = 0; i < dots.length; i++) dots[i].classList.remove("hit");
-    if (dots[idx]) dots[idx].classList.add("hit");
-
     expectedBeatTimes.push(performance.now());
     if (expectedBeatTimes.length > 40) expectedBeatTimes.shift();
-
     beatCount++;
     var interval = 60000 / bpm;
     nextBeatTime += interval;
@@ -927,16 +900,13 @@
   function stopMetro() {
     metroOn = false;
     if (metroTimer) clearTimeout(metroTimer);
-    var dots = beatDots.children;
-    for (var i = 0; i < dots.length; i++) dots[i].classList.remove("hit");
   }
   metroBtn.addEventListener("click", function () {
-    bpmRow.hidden = !bpmRow.hidden;
-    if (bpmRow.hidden) { stopMetro(); metroBtn.classList.remove("on"); }
+    if (metroOn) { stopMetro(); metroBtn.classList.remove("on"); }
     else { startMetro(); metroBtn.classList.add("on"); }
   });
-  bpmUp.addEventListener("click", function () { setBpm(bpm + 2); });
-  bpmDown.addEventListener("click", function () { setBpm(bpm - 2); });
+  bpmUp.addEventListener("click", function () { setBpm(bpm + 2); recentOnsetReal = []; });
+  bpmDown.addEventListener("click", function () { setBpm(bpm - 2); recentOnsetReal = []; });
 
   var tapTimes = [];
   tapTempo.addEventListener("click", function () {
@@ -947,61 +917,46 @@
       var intervals = [];
       for (var i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
       var avg = intervals.reduce(function (a, b) { return a + b; }, 0) / intervals.length;
-      setBpm(Math.round(60000 / avg));
+      setBpm(60000 / avg);
+      recentOnsetReal = [];
     }
   });
 
-  // ---------- A/B loop ----------
-  var aPct = 0.1, bPct = 0.5, loopActive = false;
-  abBtn.addEventListener("click", function () {
-    abRow.hidden = !abRow.hidden;
-    abBtn.classList.toggle("on", !abRow.hidden);
+  // Auto tempo detection: watches your actual playing for a steady pulse and
+  // updates the beat number live, so you don't have to set tempo by hand.
+  var recentOnsetReal = [];
+  resetBeat.addEventListener("click", function () {
+    recentOnsetReal = [];
+    autoLockDot.classList.remove("locked");
   });
-  function renderAB() {
-    abRegion.style.left = (aPct * 100) + "%";
-    abRegion.style.width = ((bPct - aPct) * 100) + "%";
-  }
-  setA.addEventListener("click", function () {
-    aPct = currentPlayheadPct();
-    if (aPct >= bPct) bPct = Math.min(1, aPct + 0.1);
-    renderAB();
-  });
-  setB.addEventListener("click", function () {
-    bPct = currentPlayheadPct();
-    if (bPct <= aPct) aPct = Math.max(0, bPct - 0.1);
-    renderAB();
-  });
-  loopToggle.addEventListener("click", function () {
-    loopActive = !loopActive;
-    loopToggle.classList.toggle("on", loopActive);
-  });
-  renderAB();
-
-  var playheadStart = performance.now(), playheadPeriodMs = 8000;
-  function currentPlayheadPct() {
-    var el = (performance.now() - playheadStart) % playheadPeriodMs;
-    return el / playheadPeriodMs;
-  }
-  function tickPlayhead() {
-    var pct = currentPlayheadPct();
-    if (loopActive && (pct < aPct || pct > bPct)) {
-      playheadStart = performance.now() - aPct * playheadPeriodMs;
-      pct = aPct;
+  function trackAutoTempo(nowReal) {
+    recentOnsetReal.push(nowReal);
+    if (recentOnsetReal.length > 6) recentOnsetReal.shift();
+    if (recentOnsetReal.length < 4) { autoLockDot.classList.remove("locked"); return; }
+    var ivs = [];
+    for (var i = 1; i < recentOnsetReal.length; i++) ivs.push(recentOnsetReal[i] - recentOnsetReal[i - 1]);
+    var mean = ivs.reduce(function (a, b) { return a + b; }, 0) / ivs.length;
+    var variance = ivs.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / ivs.length;
+    var sd = Math.sqrt(variance);
+    if (mean > 180 && mean < 2200 && sd / mean < 0.12) {
+      setBpm(60000 / mean);
+      autoLockDot.classList.add("locked");
+    } else {
+      autoLockDot.classList.remove("locked");
     }
-    abPlayhead.style.left = (pct * 100) + "%";
-    requestAnimationFrame(tickPlayhead);
   }
-  tickPlayhead();
 
   // ---------- onset detection -> staff notes ----------
   var lastRms = 0, onsetCooldown = 0;
   function registerOnset(nowMs) {
+    var nowReal = performance.now();
+    trackAutoTempo(nowReal);
     if (committedMidi === null) return;
     var hit = null;
     if (metroOn && expectedBeatTimes.length) {
       var best = Infinity;
       for (var i = 0; i < expectedBeatTimes.length; i++) {
-        var d = Math.abs(expectedBeatTimes[i] - performance.now());
+        var d = Math.abs(expectedBeatTimes[i] - nowReal);
         if (d < best) best = d;
       }
       var tolerance = Math.min(140, (60000 / bpm) * 0.22);
@@ -1027,9 +982,8 @@
     var now = performance.now();
 
     var onsetThresh = Math.max(0.025, NOISE_FLOOR * 6);
-    if (rms > onsetThresh && lastRms <= onsetThresh && now - onsetCooldown > 150) {
-      onsetCooldown = now;
-    }
+    var onsetNow = rms > onsetThresh && lastRms <= onsetThresh && now - onsetCooldown > 150;
+    if (onsetNow) onsetCooldown = now;
     lastRms = rms;
 
     if (rms > NOISE_FLOOR) lastSoundAt = now;
@@ -1060,10 +1014,9 @@
         if (curSegment.points.length > 400) curSegment.points.shift();
       }
 
-      if (now === onsetCooldown) registerOnset(activeMs);
+      if (onsetNow) registerOnset(activeMs);
 
       windowStart = Math.max(0, activeMs - MAX_SECONDS * 1000);
-      // prune history older than the rolling window
       var cutoff = windowStart - 2000;
       while (segments.length && segments[0].points.length && segments[0].points[segments[0].points.length - 1].ms < cutoff) segments.shift();
       while (staffNotes.length && staffNotes[0].ms < cutoff) staffNotes.shift();
