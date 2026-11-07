@@ -339,15 +339,15 @@
     return { name: name, octave: octave, cents: cents, midi: rounded };
   }
 
-  // Autocorrelation pitch detector (ACF2+), good for monophonic bowed strings.
+  // Autocorrelation pitch detector (ACF2+), good for monophonic bowed strings and voice.
   function autoCorrelate(buf, sampleRate) {
     var SIZE = buf.length;
     var rms = 0;
     for (var i = 0; i < SIZE; i++) { var v = buf[i]; rms += v * v; }
     rms = Math.sqrt(rms / SIZE);
-    if (rms < 0.008) return -1;
+    if (rms < 0.0015) return -1;
 
-    var r1 = 0, r2 = SIZE - 1, thres = 0.2;
+    var r1 = 0, r2 = SIZE - 1, thres = 0.15;
     for (var i2 = 0; i2 < SIZE / 2; i2++) { if (Math.abs(buf[i2]) < thres) { r1 = i2; break; } }
     for (var i3 = 1; i3 < SIZE / 2; i3++) { if (Math.abs(buf[SIZE - i3]) < thres) { r2 = SIZE - i3; break; } }
 
@@ -387,8 +387,9 @@
   });
 
   // ---------- audio graph ----------
-  var audioCtx = null, analyser = null, sourceNode = null, buf = null;
+  var audioCtx = null, analyser = null, sourceNode = null, gainNode = null, buf = null;
   var running = false;
+  var inputGain = 6; // boosts quiet sources (singing, far mic) so detection still triggers
 
   function initStatusGate() {
     if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
@@ -408,7 +409,10 @@
       analyser.fftSize = 2048;
       buf = new Float32Array(analyser.fftSize);
       sourceNode = audioCtx.createMediaStreamSource(stream);
-      sourceNode.connect(analyser);
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = inputGain;
+      sourceNode.connect(gainNode);
+      gainNode.connect(analyser);
       running = true;
       statusEl.hidden = true;
       micBtn.textContent = "■ Stop mic";
@@ -469,9 +473,15 @@
   window.addEventListener("resize", fitScope);
   fitScope();
 
-  var trace = []; // rolling cents-deviation trace, newest last
+  var trace = []; // rolling cents-deviation trace, newest last: {t, cents}
+  var labels = []; // note-name labels placed along the trace: {t, cents, text, inTune}
   var TRACE_SECONDS = 6;
-  var beatMarks = []; // {x: 0..1 relative to now, hit: bool} drawn as vertical lines scrolling through
+  var beatMarks = []; // {t: 0..1 position in current window, hit: bool}
+
+  var NOISE_FLOOR = 0.0035;      // post-gain rms above which we consider "sound present"
+  var SILENCE_HOLD_MS = 550;     // keep the window running through brief gaps (bow changes, breaths)
+  var soundActive = false, lastSoundAt = 0, windowStart = 0, frozenT = 0;
+  var lastLabelKey = null, lastLabelX = -999;
 
   function drawScope(timeBuf) {
     scopeCtx.clearRect(0, 0, scopeW, scopeH);
@@ -514,7 +524,7 @@
       }
     }
 
-    // rhythm onset markers: vertical lines scrolling left, white=on-beat, red=off-beat
+    // rhythm onset markers: vertical lines, white=on-beat, red=off-beat
     for (var m = 0; m < beatMarks.length; m++) {
       var mk = beatMarks[m];
       var mx = mk.t * scopeW;
@@ -525,6 +535,23 @@
       scopeCtx.moveTo(mx, 0); scopeCtx.lineTo(mx, scopeH);
       scopeCtx.stroke();
       scopeCtx.globalAlpha = 1;
+    }
+
+    // note-name labels along the pitch trace, like a notated line
+    scopeCtx.font = "600 13px 'JetBrains Mono', monospace";
+    scopeCtx.textBaseline = "alphabetic";
+    for (var li = 0; li < labels.length; li++) {
+      var lb = labels[li];
+      var lx = lb.t * scopeW;
+      var ly = top + bandH / 2 - (lb.cents / 50) * (bandH / 2);
+      scopeCtx.fillStyle = Math.abs(lb.cents) <= 8 ? "#e8e0cc" : (Math.abs(lb.cents) <= 20 ? "#c98a3a" : "#d6553f");
+      scopeCtx.fillText(lb.text, Math.min(Math.max(lx + 4, 2), scopeW - 40), Math.max(ly - 8, 14));
+    }
+
+    if (!soundActive) {
+      scopeCtx.fillStyle = "#a89a8099";
+      scopeCtx.font = "500 11px 'JetBrains Mono', monospace";
+      scopeCtx.fillText("listening…", 10, scopeH - 10);
     }
   }
 
@@ -668,29 +695,62 @@
     var freq = autoCorrelate(buf, audioCtx.sampleRate);
     updatePitchUI(freq);
 
-    // rms for onset detection
+    // rms for onset + "is anyone making sound" detection
     var rms = 0;
     for (var i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
     rms = Math.sqrt(rms / buf.length);
     var now = performance.now();
-    if (rms > 0.05 && lastRms <= 0.05 && now - onsetCooldown > 150) {
+    var onsetThresh = Math.max(0.025, NOISE_FLOOR * 6);
+    if (rms > onsetThresh && lastRms <= onsetThresh && now - onsetCooldown > 150) {
       onsetCooldown = now;
       registerOnset(now);
     }
     lastRms = rms;
 
-    var tNorm = (now % (TRACE_SECONDS * 1000)) / (TRACE_SECONDS * 1000);
-    if (trace.length && tNorm < trace[trace.length - 1].t) trace = []; // wrapped
-    if (freq > 0) {
-      var n = freqToNote(freq);
-      trace.push({ t: tNorm, cents: n.cents });
-      if (trace.length > 600) trace.shift();
+    if (rms > NOISE_FLOOR) lastSoundAt = now;
+    var wasActive = soundActive;
+    soundActive = (now - lastSoundAt) < SILENCE_HOLD_MS;
+
+    if (soundActive && !wasActive) {
+      // sound just started: reset the window and begin sweeping from the left edge
+      windowStart = now;
+      trace = [];
+      labels = [];
+      beatMarks = [];
+      lastLabelKey = null;
+      lastLabelX = -999;
     }
 
-    beatMarks = beatMarks.filter(function (m) {
-      m.t = (now % (TRACE_SECONDS * 1000)) / (TRACE_SECONDS * 1000);
-      return true;
-    });
+    if (soundActive) {
+      var elapsed = now - windowStart;
+      var tNorm = (elapsed / (TRACE_SECONDS * 1000));
+      if (tNorm >= 1) {
+        windowStart = now;
+        trace = [];
+        labels = [];
+        beatMarks = [];
+        lastLabelKey = null;
+        lastLabelX = -999;
+        tNorm = 0;
+      }
+      frozenT = tNorm;
+      if (freq > 0) {
+        var n = freqToNote(freq);
+        trace.push({ t: tNorm, cents: n.cents });
+        if (trace.length > 600) trace.shift();
+        var key = n.name + n.octave;
+        var x = tNorm * scopeW;
+        if (key !== lastLabelKey && (x - lastLabelX) > 28) {
+          labels.push({ t: tNorm, cents: n.cents, text: key });
+          if (labels.length > 40) labels.shift();
+          lastLabelKey = key;
+          lastLabelX = x;
+        } else if (key !== lastLabelKey) {
+          lastLabelKey = key; // note changed but too close to label again yet
+        }
+      }
+    }
+    // when not active, trace/labels/beatMarks simply stop receiving new points (frozen display)
 
     drawScope(buf);
     requestAnimationFrame(loop);
@@ -705,7 +765,8 @@
     }
     var tolerance = Math.min(140, (60000 / bpm) * 0.22);
     var hit = best <= tolerance;
-    var tNorm = (now % (TRACE_SECONDS * 1000)) / (TRACE_SECONDS * 1000);
+    if (!soundActive) return;
+    var tNorm = Math.max(0, Math.min(1, (now - windowStart) / (TRACE_SECONDS * 1000)));
     beatMarks.push({ t: tNorm, hit: hit });
     if (beatMarks.length > 80) beatMarks.shift();
   }
