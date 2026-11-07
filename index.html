@@ -98,12 +98,12 @@
     background: var(--panel-2);
     border: 1px solid var(--line);
     border-radius: 12px;
-    padding: 8px 10px;
+    padding: 6px 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
-  #actionRow { display: flex; justify-content: flex-end; height: 46px; }
+  #actionRow { display: flex; justify-content: flex-end; height: 40px; }
   #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 162px; }
   button.startBtn {
     flex: 1 1 0;
@@ -111,14 +111,14 @@
     flex-direction: column;
     gap: 1px;
     text-align: center;
-    padding: 8px 6px;
-    line-height: 1.25;
+    padding: 5px 6px;
+    line-height: 1.2;
   }
-  button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
-  button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
+  button.startBtn .l1 { font-size: 11px; font-weight: 700; }
+  button.startBtn .l2 { font-size: 9px; font-weight: 400; color: inherit; opacity: 0.85; }
 
-  #liveNote { width: 100%; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; }
-  #liveNoteName { font-weight: 600; font-size: 60px; line-height: 1; transition: color 120ms ease; flex: 0 0 auto; }
+  #liveNote { width: 100%; min-width: 0; height: 44px; display: flex; align-items: center; gap: 10px; overflow: hidden; }
+  #liveNoteName { font-weight: 600; font-size: 38px; line-height: 1; transition: color 120ms ease; flex: 0 0 auto; }
   #liveNoteName sup { font-size: 0.48em; vertical-align: 55%; }
   #liveNoteName sub { font-size: 0.48em; vertical-align: -15%; }
   #liveNoteStack { display: flex; flex-direction: column; gap: 1px; flex: 0 0 auto; line-height: 1.15; }
@@ -597,7 +597,7 @@
     var oct = midiOctave(committedMidi);
     liveNoteName.innerHTML = letter + (SHARP_BY_PC[pcIdx] ? "<sup>#</sup>" : "") + "<sub>" + oct + "</sub>";
     liveNoteCents.textContent = (c > 0 ? "+" : "") + c + "¢";
-    liveNoteFreq.textContent = freq.toFixed(1) + "Hz";
+    liveNoteFreq.textContent = freq >= 1000 ? (freq / 1000).toFixed(2) + "kHz" : freq.toFixed(1) + "Hz";
     var inTune = Math.abs(c) <= 8;
     liveNoteName.style.color = inTune ? "var(--string)" : (Math.abs(c) <= 20 ? "var(--fg)" : "var(--accent)");
   }
