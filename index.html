@@ -895,6 +895,8 @@
     });
     return best;
   }
+  var BOOK_LOOKAHEAD = 4; // how many notes ahead to check when the current target doesn't match
+
   function processPlayedSegment(seg, endMs) {
     if (!currentPiece || !seg.points.length) return;
     var startMs = seg.points[0].ms;
@@ -913,33 +915,51 @@
 
     if (!target) { seg.bookStatus = "extra"; return; }
 
-    if (seg.midi !== target.midi) {
+    var matchIndex = -1;
+    if (seg.midi === target.midi) {
+      matchIndex = bookCursor;
+    } else {
+      // doesn't match what's expected right now — check whether you've
+      // actually moved on to one of the next few notes instead, so one
+      // wrong/missed note doesn't block everything that comes after it
+      var lastIdx = Math.min(bookCursor + BOOK_LOOKAHEAD, currentPiece.notes.length - 1);
+      for (var j = bookCursor + 1; j <= lastIdx; j++) {
+        if (currentPiece.notes[j].midi === seg.midi) { matchIndex = j; break; }
+      }
+    }
+
+    if (matchIndex === -1) {
       target.wrongAttempts = (target.wrongAttempts || 0) + 1;
       seg.bookStatus = "wrong-pitch";
       bookWrongFlashUntil = performance.now() + 260;
       return; // the target doesn't advance — you keep trying this note
     }
 
-    var ratio = actualBeats / target.beats;
+    // anything jumped over on the way to the match gets marked missed,
+    // rather than silently vanishing from the score
+    for (var k = bookCursor; k < matchIndex; k++) currentPiece.notes[k].status = "missed";
+
+    var matched = currentPiece.notes[matchIndex];
+    var ratio = actualBeats / matched.beats;
     seg.bookStatus = (ratio >= 0.55 && ratio <= 1.8) ? "hit" : "wrong-rhythm";
-    target.status = seg.bookStatus;
-    target.resolvedAtMs = endMs;
-    target.actualBeats = actualBeats;
+    matched.status = seg.bookStatus;
+    matched.resolvedAtMs = endMs;
+    matched.actualBeats = actualBeats;
     // fold this note into the running tempo estimate, but reject wild outliers
     // (a stray double-length hold shouldn't yank the estimate around)
     if (ratio > 0.35 && ratio < 3) {
-      var sample = heldMs / target.beats;
+      var sample = heldMs / matched.beats;
       bookEstBeatMs = bookEstBeatMs ? (bookEstBeatMs * 0.7 + sample * 0.3) : sample;
     }
-    bookCursor++;
+    bookCursor = matchIndex + 1;
   }
 
   function logBookAttempt() {
     if (!currentPiece) return;
     var relevant = currentPiece.notes.slice(bookStartNote);
     var hits = relevant.filter(function (n) { return n.status === "hit"; }).length;
-    var wrong = relevant.filter(function (n) { return n.status === "wrong-rhythm"; }).length;
-    var total = hits + wrong;
+    var resolved = relevant.filter(function (n) { return n.status === "hit" || n.status === "wrong-rhythm" || n.status === "missed"; }).length;
+    var total = resolved;
     if (total === 0) return;
     bookAttempts.push({ n: bookAttempts.length + 1, hits: hits, total: total, pct: Math.round(hits / total * 100) });
     renderBookLog();
@@ -1055,8 +1075,9 @@
       if (x < -slotW || x > w + slotW) continue;
       var y = refStaffY(n.midi);
       var color, scale = baseScale;
-      if (i < bookCursor) color = n.status === "hit" ? "#7ab08f" : (n.status === "wrong-rhythm" ? "#d9a63a" : "#8ca0c4");
-      else if (i === bookCursor) { color = "#eef3fb"; scale = baseScale * 1.2; }
+      if (i < bookCursor) {
+        color = n.status === "hit" ? "#7ab08f" : n.status === "wrong-rhythm" ? "#d9a63a" : n.status === "missed" ? "#d9693a" : "#8ca0c4";
+      } else if (i === bookCursor) { color = "#eef3fb"; scale = baseScale * 1.2; }
       else color = "#8ca0c477";
       drawEngravedNote(bookRefCtx, x, y, n.beats, stemUpFor(n.midi), color, 1, scale);
       lastRefHit.push({ i: i, x: x });
