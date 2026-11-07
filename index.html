@@ -47,16 +47,6 @@
   }
   .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
-  html.force-landscape, html.force-landscape body { overflow: hidden; }
-  html.force-landscape #app {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vh;
-    height: 100vw;
-    transform-origin: top left;
-    transform: rotate(90deg) translateY(-100%);
-  }
-
   #app { display: flex; flex-direction: column; height: 100%; }
 
   header {
@@ -80,14 +70,8 @@
     font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right;
   }
   #a4 input:focus { outline: none; }
-  #rotateToggle {
-    width: 28px; height: 28px; border-radius: 999px;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--panel); border: 1px solid var(--line); color: var(--fg-dim);
-    font-size: 13px; padding: 0;
-  }
 
-  #main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 16px 8px; gap: 6px; }
+  #main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 16px; gap: 6px; }
 
   /* ---- slim control bar ---- */
   #controlBar {
@@ -125,9 +109,26 @@
 
   #postStart #stopBtn { flex: 0 0 auto; }
   #refindBtn { flex: 0 0 auto; width: 38px; justify-content: center; padding: 9px; }
-  #liveNote { flex: 1 1 auto; min-width: 0; font-size: 15px; display: flex; align-items: baseline; gap: 8px; }
-  #liveNoteName { font-weight: 600; font-size: 20px; transition: color 120ms ease; }
-  #liveNoteCents { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--fg-dim); }
+  #liveNote { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
+  #liveNoteName { font-weight: 600; font-size: 20px; transition: color 120ms ease; flex: 0 0 auto; }
+  #liveNoteCents {
+    font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 19px;
+    color: var(--fg); flex: 0 0 auto;
+  }
+  #liveNoteFreq {
+    font-family: 'JetBrains Mono', monospace; font-weight: 300; font-size: 11px;
+    color: var(--fg-dim); flex: 0 0 auto;
+  }
+
+  /* ---- bottom status bar ---- */
+  #statusBar {
+    flex: 0 0 auto;
+    background: var(--panel-2);
+    border-top: 1px solid var(--line);
+    padding: 7px 16px max(7px, env(safe-area-inset-bottom, 0px));
+    margin: 6px -16px 0;
+  }
+  #statusBarText { font-size: 11px; color: var(--fg-dim); font-family: 'JetBrains Mono', monospace; }
 
   /* ---- tab switcher ---- */
   #tabBar { flex: 0 0 auto; display: flex; gap: 6px; }
@@ -184,8 +185,6 @@
   }
   #status h2 { font-size: 20px; margin: 0; }
   #status p { color: var(--fg-dim); font-size: 14px; max-width: 46ch; margin: 0; }
-  #rotateChoice { display: flex; flex-direction: column; gap: 8px; align-items: center; }
-  #rotateChoice .row { display: flex; gap: 8px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -195,7 +194,6 @@
   <header>
     <h1>Kaman<span>cheh</span> Tuner</h1>
     <div class="right">
-      <button id="rotateToggle" hidden title="Rotate view">⤢</button>
       <label id="a4">A4<input id="a4input" type="number" value="440" step="1" inputmode="numeric"></label>
     </div>
   </header>
@@ -221,12 +219,15 @@
         </div>
       </div>
       <div id="postStart" hidden>
-        <button id="stopBtn" class="icon" title="Stop">■</button>
         <button id="refindBtn" title="Re-find tempo">⟳</button>
         <div id="liveNote">
           <span id="liveNoteName">–</span>
           <span id="liveNoteCents">0¢</span>
+          <span id="liveNoteFreq">0Hz</span>
         </div>
+        <button id="stopBtn" class="startBtn">
+          <span class="l1">■ Stop</span><span class="l2">mic</span>
+        </button>
       </div>
     </div>
 
@@ -251,6 +252,8 @@
       </div>
       <button id="liveBtn" class="ghost" hidden>● live</button>
     </div>
+
+    <div id="statusBar"><span id="statusBarText">Tap a Start button to begin.</span></div>
   </div>
 
 </div>
@@ -259,13 +262,6 @@
   <h2>Microphone access needed</h2>
   <p id="statusMsg">This tuner listens to your kamancheh through the microphone to show pitch and rhythm in real time. Nothing is recorded or sent anywhere — it all stays on this device.</p>
   <button id="statusBtn" class="primary">Allow microphone</button>
-  <div id="rotateChoice" hidden>
-    <p class="hint" style="max-width:40ch">On a phone, this tuner reads better sideways. If your screen rotation is locked, I can rotate the view in software instead.</p>
-    <div class="row">
-      <button id="rotateYes" class="primary">Rotate & allow mic</button>
-      <button id="rotateNo">Keep portrait</button>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -321,16 +317,17 @@
   // ---------- DOM refs ----------
   var $ = function (id) { return document.getElementById(id); };
   var statusEl = $("status"), statusMsg = $("statusMsg"), statusBtn = $("statusBtn");
-  var rotateChoice = $("rotateChoice"), rotateYes = $("rotateYes"), rotateNo = $("rotateNo"), rotateToggle = $("rotateToggle");
-  var hintEl = null;
+  var statusBarText = $("statusBarText");
   var a4input = $("a4input");
+
+  function setStatus(text) { statusBarText.textContent = text; }
 
   var preStart = $("preStart"), postStart = $("postStart");
   var beatUp = $("beatUp"), beatDown = $("beatDown"), beatNum = $("beatNum");
   var startManual = $("startManual"), startManualLabel = $("startManualLabel");
   var startAuto = $("startAuto"), startAutoLabel = $("startAutoLabel"), startAutoLabel2 = $("startAutoLabel2");
   var stopBtn = $("stopBtn"), refindBtn = $("refindBtn");
-  var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents");
+  var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents"), liveNoteFreq = $("liveNoteFreq");
 
   var tabStaff = $("tabStaff"), tabContour = $("tabContour");
   var scopeGutter = $("scopeGutter");
@@ -359,25 +356,6 @@
   tabStaff.addEventListener("click", function () { setTab("staff"); });
   tabContour.addEventListener("click", function () { setTab("contour"); });
 
-  // ---------- mobile / rotate ----------
-  function isMobile() {
-    var ua = navigator.userAgent || "";
-    if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
-    try {
-      return window.matchMedia("(pointer: coarse)").matches && Math.min(window.innerWidth, window.innerHeight) < 700;
-    } catch (e) { return false; }
-  }
-  function setRotated(on) {
-    document.documentElement.classList.toggle("force-landscape", on);
-    rotateToggle.hidden = false;
-    setTimeout(fitScopes, 60);
-  }
-  rotateYes.addEventListener("click", function () { setRotated(true); requestMic(); });
-  rotateNo.addEventListener("click", function () { requestMic(); });
-  rotateToggle.addEventListener("click", function () {
-    setRotated(!document.documentElement.classList.contains("force-landscape"));
-  });
-
   // ---------- audio graph ----------
   var audioCtx = null, analyser = null, sourceNode = null, gainNode = null, buf = null;
   var micRunning = false;
@@ -388,11 +366,6 @@
       statusMsg.textContent = "Microphone access requires HTTPS (or localhost). Host this page over HTTPS — e.g. GitHub Pages — then reopen it there.";
       statusBtn.disabled = true;
       statusBtn.textContent = "Needs HTTPS";
-      return;
-    }
-    if (isMobile()) {
-      statusBtn.hidden = true;
-      rotateChoice.hidden = false;
     }
   }
   initStatusGate();
@@ -401,6 +374,7 @@
   // It does NOT start a recorded session — that happens via the Start
   // buttons in the control bar (startManual / startAuto).
   function requestMic() {
+    setStatus("Requesting microphone…");
     navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     }).then(function (stream) {
@@ -415,13 +389,14 @@
       gainNode.connect(analyser);
       micRunning = true;
       statusEl.hidden = true;
+      setStatus("Microphone ready.");
       fitScopes();
       requestAnimationFrame(loop);
       if (pendingAfterMic) { var fn = pendingAfterMic; pendingAfterMic = null; fn(); }
     }).catch(function (err) {
       statusMsg.textContent = "Microphone permission was denied or unavailable (" + err.message + "). Allow mic access in your browser's site settings and reload.";
-      rotateChoice.hidden = true;
       statusBtn.hidden = false;
+      setStatus("Microphone permission denied.");
     });
   }
   statusBtn.addEventListener("click", requestMic);
@@ -433,11 +408,12 @@
     lastDotPc = null; lastCanvasWidthPx = -1;
   }
 
-  function beginSession() {
+  function beginSession(msg) {
     if (!sessionStarted) resetSessionData();
     sessionStarted = true;
     preStart.hidden = true;
     postStart.hidden = false;
+    setStatus(msg || ("Session started at " + bpm + " bpm."));
   }
   function endSession() {
     sessionStarted = false;
@@ -447,11 +423,13 @@
     postStart.hidden = true;
     liveNoteName.textContent = "–";
     liveNoteCents.textContent = "0¢";
+    liveNoteFreq.textContent = "0Hz";
   }
   stopBtn.addEventListener("click", function () {
     if (audioCtx) audioCtx.close();
     micRunning = false;
     endSession();
+    setStatus("Stopped.");
   });
 
   // ---------- committed-note smoothing (kills frame jitter + octave-error spikes) ----------
@@ -490,11 +468,14 @@
       liveNoteName.textContent = "–";
       liveNoteName.style.color = "var(--fg-dim)";
       liveNoteCents.textContent = "0¢";
+      liveNoteFreq.textContent = "0Hz";
       return;
     }
     var c = Math.round(committedCentsEMA);
+    var freq = a4 * Math.pow(2, (committedMidi + committedCentsEMA / 100 - 69) / 12);
     liveNoteName.textContent = noteLabel(committedMidi);
     liveNoteCents.textContent = (c > 0 ? "+" : "") + c + "¢";
+    liveNoteFreq.textContent = freq.toFixed(1) + "Hz";
     var inTune = Math.abs(c) <= 8;
     liveNoteName.style.color = inTune ? "var(--string)" : (Math.abs(c) <= 20 ? "var(--fg)" : "var(--accent)");
   }
@@ -555,8 +536,8 @@
 
   // ---------- staff geometry (compact, fixed spacing; 2 ledger-guide lines each side) ----------
   function staffLayout() {
-    var halfSpacing = 8;
-    var reserveBelow = 4, reserveAbove = 4;
+    var halfSpacing = 13;
+    var reserveBelow = 6, reserveAbove = 6; // 3 ledger lines each side
     var contentHalfSteps = 8 + reserveAbove + reserveBelow;
     var contentHeight = contentHalfSteps * halfSpacing;
     var topPad = Math.max(6, (panelH - contentHeight) / 2);
@@ -578,7 +559,7 @@
     staffCtx.strokeStyle = "#f2ead933";
     staffCtx.setLineDash([3, 4]);
     staffCtx.lineWidth = 1;
-    [ -4, -2, 10, 12 ].forEach(function (step) {
+    [ -6, -4, -2, 10, 12, 14 ].forEach(function (step) {
       var y = g.bottomY - step * g.halfSpacing;
       staffCtx.beginPath(); staffCtx.moveTo(0, y); staffCtx.lineTo(w, y); staffCtx.stroke();
     });
@@ -700,10 +681,13 @@
   var pendingAfterMic = null;
   var autoFinding = false, findDeadline = 0, recentOnsetReal = [];
 
+  var lastShownRemaining = -1;
   function startAutoFind() {
     recentOnsetReal = [];
     autoFinding = true;
     findDeadline = performance.now() + 5000;
+    lastShownRemaining = -1;
+    setStatus("Listening for a steady pulse… play a few even notes.");
   }
   startAuto.addEventListener("click", function () {
     if (!micRunning) { requestMic(); pendingAfterMic = startAutoFind; }
@@ -731,7 +715,7 @@
       pulseBeatNum();
       if (autoFinding) {
         autoFinding = false;
-        if (!sessionStarted) beginSession();
+        if (!sessionStarted) beginSession("Tempo locked at " + bpm + " bpm — session started.");
       }
     }
   }
@@ -763,9 +747,16 @@
     updateLiveNoteUI();
 
     if (onsetNow && autoFinding) trackAutoTempoOnset(now);
-    if (autoFinding && now > findDeadline) {
-      autoFinding = false;
-      if (!sessionStarted) beginSession(); // give up: start anyway with last known bpm
+    if (autoFinding) {
+      var remaining = Math.max(0, Math.ceil((findDeadline - now) / 1000));
+      if (remaining !== lastShownRemaining) {
+        lastShownRemaining = remaining;
+        setStatus("Listening for a steady pulse… " + remaining + "s");
+      }
+      if (now > findDeadline) {
+        autoFinding = false;
+        if (!sessionStarted) beginSession("Couldn't find a steady pulse — started at " + bpm + " bpm.");
+      }
     }
 
     if (!soundActive && wasActive) {
