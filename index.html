@@ -518,10 +518,13 @@
     setStatus(msg || ("Session started at " + bpm + " bpm."));
   }
   function endSession() {
+    // Recorded data (segments/scatterPoints) deliberately survives Stop, so
+    // you can still flip between Staff/Contour/Pitch-scaled and review a
+    // finished take. It's only cleared when a new session actually starts
+    // (see beginSession's `if (!sessionStarted)` guard).
     sessionStarted = false;
     sessionPaused = false;
     autoFinding = false;
-    resetSessionData();
     preStart.hidden = false;
     postStart.hidden = true;
     liveNoteName.textContent = "–";
