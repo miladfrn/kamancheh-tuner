@@ -1,0 +1,1199 @@
+{
+ "title": "Navid-e Bahar (نوید بهار)",
+ "composer": "Abolhassan Saba (ابوالحسن صبا)",
+ "book": "Violin Book 1",
+ "exercise_number": 40,
+ "instrument": "violin",
+ "key": "D major (F#, C#)",
+ "time_signature": "2/4",
+ "tempo": {
+  "beat": "quarter",
+  "bpm": 60
+ },
+ "solfege_system": "fixed-do (Do = C)",
+ "notes_on_markings": {
+  "beats": "beats are quarter-note beats; a sixteenth note = 0.25",
+  "slur_group": "notes sharing a slur_group number are under one slur",
+  "finger": "printed left-hand finger numbers; 0 = open string",
+  "bar_1": "first note has a down-bow mark",
+  "bar_12": "second note has a natural sign (C natural, not C#)",
+  "bar_30": "repeat-previous-bar sign, labelled (1) on the page",
+  "bar_31": "final bar"
+ },
+ "bars": [
+  {
+   "bar": 1,
+   "notes": [
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 1.0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 2,
+   "notes": [
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 3,
+   "notes": [
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 1
+    }
+   ]
+  },
+  {
+   "bar": 4,
+   "notes": [
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 5,
+   "notes": [
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 0.25,
+     "finger": 4,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 6,
+   "notes": [
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 7,
+   "notes": [
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 1
+    }
+   ]
+  },
+  {
+   "bar": 8,
+   "notes": [
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 9,
+   "notes": [
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 1.0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 1.0,
+     "finger": 4
+    }
+   ]
+  },
+  {
+   "bar": 10,
+   "notes": [
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 0.25,
+     "finger": 4,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 0.25,
+     "finger": 4,
+     "slur_group": 1
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 1
+    }
+   ]
+  },
+  {
+   "bar": 11,
+   "notes": [
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 0.25,
+     "finger": 4,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 1.0,
+     "finger": 0
+    }
+   ]
+  },
+  {
+   "bar": 12,
+   "notes": [
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "C5",
+     "solfege": "Do5",
+     "midi": 72,
+     "beats": 0.25,
+     "natural_sign": true,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 13,
+   "notes": [
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 14,
+   "notes": [
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 1
+    }
+   ]
+  },
+  {
+   "bar": 15,
+   "notes": [
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 16,
+   "notes": [
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 1.0,
+     "finger": 1
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 17,
+   "notes": [
+    {
+     "pitch": "G5",
+     "solfege": "Sol5",
+     "midi": 79,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 18,
+   "notes": [
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 1.0,
+     "finger": 1
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 19,
+   "notes": [
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 20,
+   "notes": [
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 1.0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 21,
+   "notes": [
+    {
+     "pitch": "G5",
+     "solfege": "Sol5",
+     "midi": 79,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 22,
+   "notes": [
+    {
+     "pitch": "G5",
+     "solfege": "Sol5",
+     "midi": 79,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G5",
+     "solfege": "Sol5",
+     "midi": 79,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 1
+    }
+   ]
+  },
+  {
+   "bar": 23,
+   "notes": [
+    {
+     "pitch": "G5",
+     "solfege": "Sol5",
+     "midi": 79,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "A5",
+     "solfege": "La5",
+     "midi": 81,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G5",
+     "solfege": "Sol5",
+     "midi": 79,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#5",
+     "solfege": "Fa#5",
+     "midi": 78,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E5",
+     "solfege": "Mi5",
+     "midi": 76,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 24,
+   "notes": [
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 1.0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 25,
+   "notes": [
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 26,
+   "notes": [
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 1
+    }
+   ]
+  },
+  {
+   "bar": 27,
+   "notes": [
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 28,
+   "notes": [
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "E4",
+     "solfege": "Mi4",
+     "midi": 64,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "F#4",
+     "solfege": "Fa#4",
+     "midi": 66,
+     "beats": 0.25,
+     "slur_group": 0
+    },
+    {
+     "pitch": "G4",
+     "solfege": "Sol4",
+     "midi": 67,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "B4",
+     "solfege": "Si4",
+     "midi": 71,
+     "beats": 0.25,
+     "slur_group": 1
+    },
+    {
+     "pitch": "C#5",
+     "solfege": "Do#5",
+     "midi": 73,
+     "beats": 0.25,
+     "slur_group": 1
+    }
+   ]
+  },
+  {
+   "bar": 29,
+   "notes": [
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 1.0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 30,
+   "repeat_of_bar": 29,
+   "label": "(1)",
+   "notes": [
+    {
+     "pitch": "D5",
+     "solfege": "Re5",
+     "midi": 74,
+     "beats": 1.0
+    },
+    {
+     "pitch": "A4",
+     "solfege": "La4",
+     "midi": 69,
+     "beats": 1.0
+    }
+   ]
+  },
+  {
+   "bar": 31,
+   "notes": [
+    {
+     "pitch": "D4",
+     "solfege": "Re4",
+     "midi": 62,
+     "beats": 1.0
+    },
+    {
+     "rest": true,
+     "beats": 1.0
+    }
+   ]
+  }
+ ]
+}
