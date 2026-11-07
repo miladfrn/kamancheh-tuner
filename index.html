@@ -171,13 +171,43 @@
   #tabBar button { flex: 1 1 0; justify-content: center; font-size: 11.5px; }
   #tabBar button.on { background: var(--accent); border-color: var(--accent); color: #1c1200; font-weight: 700; }
 
-  /* ---- book practice: static "what to play next" reference strip ---- */
+  /* ---- book practice: scrollable "what to play next" reference strip ---- */
   #bookRefPanel {
     flex: 1 1 0; min-height: 0;
     background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-    overflow: hidden;
+    overflow: hidden; position: relative;
   }
-  #bookRefCanvas { display: block; width: 100%; height: 100%; }
+  #bookRefScroll {
+    width: 100%; height: 100%;
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; touch-action: pan-x;
+  }
+  #bookRefCanvas { display: block; height: 100%; }
+  #bookRefLiveBtn {
+    position: absolute; right: 10px; bottom: 8px; z-index: 3;
+    font-size: 9.5px; padding: 6px 10px;
+  }
+  #bookRefLiveBtn:not(.on) { background: #13213cdd; }
+
+  /* ---- book practice on a phone: drop everything but the two panels,
+     and fold the live note readout into the reference strip's corner ---- */
+  @media (max-width: 480px) {
+    body.book-compact header { display: none; }
+    body.book-compact #controlBar { justify-content: center; }
+    body.book-compact #zoomControls,
+    body.book-compact #rollToggle,
+    body.book-compact #pitchScaleToggle,
+    body.book-compact #sensToggle,
+    body.book-compact #liveBtn { display: none; }
+    body.book-compact #bookRefPanel #liveNote {
+      position: absolute; top: 6px; left: 8px; z-index: 4;
+      background: #0b1424cc; border-radius: 8px; padding: 3px 8px 4px;
+      gap: 5px; max-width: calc(100% - 16px);
+    }
+    body.book-compact #bookRefPanel #liveNoteName { font-size: 20px; }
+    body.book-compact #bookRefPanel #liveNoteCents { font-size: 10px; }
+    body.book-compact #bookRefPanel #liveNoteFreq { font-size: 8px; }
+  }
 
   /* ---- scope panel ---- */
   #scopeOuter {
@@ -231,7 +261,11 @@
     position: absolute; top: 72px; right: 10px; z-index: 3;
     font-size: 9.5px; padding: 6px 10px;
   }
-  #liveBtn:not(.on), #rollToggle:not(.on), #pitchScaleToggle:not(.on), #sensToggle { background: #13213cdd; }
+  #rhythmToggle {
+    position: absolute; top: 104px; right: 10px; z-index: 3;
+    font-size: 9.5px; padding: 6px 10px;
+  }
+  #liveBtn:not(.on), #rollToggle:not(.on), #pitchScaleToggle:not(.on), #sensToggle, #rhythmToggle:not(.on) { background: #13213cdd; }
 
   button {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
@@ -324,7 +358,10 @@
     </div>
 
     <div id="bookRefPanel" hidden>
-      <canvas id="bookRefCanvas"></canvas>
+      <div id="bookRefScroll">
+        <canvas id="bookRefCanvas"></canvas>
+      </div>
+      <button id="bookRefLiveBtn" class="on">● following live</button>
     </div>
 
     <div id="scopeOuter">
@@ -351,6 +388,7 @@
       <button id="rollToggle" title="How the timeline moves through silence">Pause on silence</button>
       <button id="pitchScaleToggle" title="Space staff lines by real pitch distance">Pitch-scaled lines</button>
       <button id="sensToggle" title="How easily a brief dip between notes counts as a gap">Gap: Med</button>
+      <button id="rhythmToggle" title="Read each note's rhythm against the Beat/BPM setting (Staff only)">Rhythm</button>
       <button id="liveBtn" class="on">● following live</button>
     </div>
 
@@ -439,10 +477,13 @@
   var startAuto = $("startAuto");
   var stopBtn = $("stopBtn"), pauseBtn = $("pauseBtn"), pauseLabel = $("pauseLabel");
   var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents"), liveNoteFreq = $("liveNoteFreq");
+  var controlBar = $("controlBar"), liveNote = $("liveNote");
 
   var tabStaff = $("tabStaff"), tabContour = $("tabContour"), tabBook = $("tabBook");
   var pieceSelect = $("pieceSelect"), bookLog = $("bookLog");
-  var bookRefPanel = $("bookRefPanel"), bookRefCanvas = $("bookRefCanvas"), bookRefCtx = bookRefCanvas.getContext("2d");
+  var bookRefPanel = $("bookRefPanel"), bookRefScroll = $("bookRefScroll");
+  var bookRefCanvas = $("bookRefCanvas"), bookRefCtx = bookRefCanvas.getContext("2d");
+  var bookRefLiveBtn = $("bookRefLiveBtn");
   var scopeGutter = $("scopeGutter"), scopeGutterNums = $("scopeGutterNums"), scopeGutterNotes = $("scopeGutterNotes");
   var contourCanvas = $("contourCanvas"), contourCtx = contourCanvas.getContext("2d");
   var staffCanvas = $("staffCanvas"), staffCtx = staffCanvas.getContext("2d");
@@ -452,6 +493,12 @@
   var zoomIn = $("zoomIn"), zoomOut = $("zoomOut");
   var a4down = $("a4down"), a4up = $("a4up");
   var rollToggle = $("rollToggle"), pitchScaleToggle = $("pitchScaleToggle"), sensToggle = $("sensToggle");
+  var rhythmToggle = $("rhythmToggle");
+  var staffRhythmOn = false;
+  rhythmToggle.addEventListener("click", function () {
+    staffRhythmOn = !staffRhythmOn;
+    rhythmToggle.classList.toggle("on", staffRhythmOn);
+  });
 
   // Roll with time (default): the x-axis keeps moving at real speed even
   // through silence, so a rest between two notes shows as real empty space.
@@ -502,9 +549,24 @@
     fitScopes();
     if (isStaffLike(activeTab)) renderGutterNotes();
     if (isStaffLike(activeTab)) drawStaff(); else drawContour();
-    if (activeTab === "book") { fitBookRef(); drawBookRef(); }
+    if (activeTab === "book") { fitBookRef(); drawBookRef(); followBookRef(); }
     drawTimeAxis();
   }
+  // On a phone, Book Practice needs both panels' full height, so this drops
+  // the header and the floating staff-corner buttons and folds the live
+  // note readout into the reference strip's own corner instead of its usual
+  // row in the control bar — only while actually on that tab, on that size.
+  function isMobileWidth() { return window.innerWidth <= 480; }
+  var bookCompact = false;
+  function updateBookCompactLayout() {
+    var want = activeTab === "book" && isMobileWidth();
+    if (want === bookCompact) return;
+    bookCompact = want;
+    document.body.classList.toggle("book-compact", want);
+    if (want) bookRefPanel.insertBefore(liveNote, bookRefPanel.firstChild);
+    else controlBar.insertBefore(liveNote, controlBar.firstChild);
+  }
+
   function setTab(t) {
     activeTab = t;
     tabStaff.classList.toggle("on", t === "staff");
@@ -512,6 +574,7 @@
     tabBook.classList.toggle("on", t === "book");
     staffCanvas.hidden = !isStaffLike(t);
     contourCanvas.hidden = t !== "contour";
+    updateBookCompactLayout();
     updateGutterAndOffsets();
   }
   tabStaff.addEventListener("click", function () { setTab("staff"); });
@@ -586,6 +649,7 @@
         });
         bookCursor = bookStartNote;
         bookEstBeatMs = null; bookWrongFlashUntil = 0;
+        setBookRefFollow(true);
       }
     }
     sessionStarted = true;
@@ -611,7 +675,11 @@
   stopBtn.addEventListener("click", function () {
     if (audioCtx) audioCtx.close();
     micRunning = false;
-    if (activeTab === "book") logBookAttempt();
+    if (activeTab === "book") {
+      endCurrentSegment(activeMs);
+      realignBookAttempt();
+      logBookAttempt();
+    }
     endSession();
     setStatus("Stopped.");
   });
@@ -727,9 +795,9 @@
     var rect = scopeScroll.getBoundingClientRect();
     panelH = scopeCanvases.getBoundingClientRect().height || (rect.height - AXIS_H);
     resizeCanvasesToWidth(Math.max(rect.width, usedWidthPx()));
-    if (activeTab === "book") { fitBookRef(); drawBookRef(); }
+    if (activeTab === "book") { fitBookRef(); drawBookRef(); followBookRef(); }
   }
-  window.addEventListener("resize", fitScopes);
+  window.addEventListener("resize", function () { updateBookCompactLayout(); fitScopes(); });
 
   function usedWidthPx() {
     var w = Math.min(MAX_SECONDS, activeMs / 1000) * PX_PER_SEC;
@@ -857,6 +925,7 @@
     setStatus('Loaded "' + data.title + '" — tap a note in the reference strip to start there, or press Record.');
     fitBookRef();
     drawBookRef();
+    setBookRefFollow(true);
     if (activeTab === "book") drawStaff();
   }
 
@@ -876,7 +945,9 @@
     bookCursor = i;
     bookEstBeatMs = null;
     setStatus("Practice starts at note " + (i + 1) + ": " + noteLabel(currentPiece.notes[i].midi) + ".");
+    fitBookRef();
     drawBookRef();
+    setBookRefFollow(true);
     if (activeTab === "book") drawStaff();
   }
 
@@ -895,8 +966,38 @@
     });
     return best;
   }
-  var BOOK_LOOKAHEAD = 4; // how many notes ahead to check when the current target doesn't match
 
+  // ---------- Staff-mode rhythm reading: no loaded piece, works on anything ----------
+  // Each note is judged on its own, against the header's Beat/BPM, snapped to
+  // the nearest "nice" rhythmic value (quarter/eighth/sixteenth/half) — that
+  // gives an absolute reading per note that a pause before or after it can't
+  // throw off, since it never depends on a neighbor's timing. Only *then* is
+  // it compared to the immediately preceding note, but only when that note
+  // snapped to the same value too (a genuinely back-to-back repeated figure),
+  // which is what actually answers "were these consistent with each other."
+  function analyzeStaffRhythm(seg, endMs) {
+    var nominalBeatMs = 60000 / bpm;
+    var startMs = seg.points[0].ms;
+    var heldMs = Math.max(1, endMs - startMs);
+    var nominalBeats = heldMs / nominalBeatMs;
+    var snapped = snapToNoteValue(nominalBeats);
+    seg.rhythmBeats = snapped;
+    seg.rhythmStartMs = startMs;
+    seg.rhythmOffPct = (nominalBeats / snapped - 1) * 100; // vs. its own nearest nice value
+
+    var prevSeg = segments.length >= 2 ? segments[segments.length - 2] : null;
+    seg.rhythmPairDeltaPct = null;
+    if (prevSeg && prevSeg.rhythmBeats === snapped) {
+      var prevHeld = Math.max(1, prevSeg.points[prevSeg.points.length - 1].ms - prevSeg.points[0].ms);
+      seg.rhythmPairDeltaPct = (heldMs - prevHeld) / prevHeld * 100; // vs. the previous matching note
+    }
+  }
+  // Live matching only drives the moving cursor you see while playing — it's
+  // deliberately simple (single target, no guessing ahead) because a greedy
+  // lookahead turned out to misjudge and jump too eagerly in practice. The
+  // authoritative scoring comes from realignBookAttempt() at Stop, which
+  // re-reads the whole take at once and can't get stuck the way a live,
+  // one-note-at-a-time matcher can.
   function processPlayedSegment(seg, endMs) {
     if (!currentPiece || !seg.points.length) return;
     var startMs = seg.points[0].ms;
@@ -915,43 +1016,117 @@
 
     if (!target) { seg.bookStatus = "extra"; return; }
 
-    var matchIndex = -1;
-    if (seg.midi === target.midi) {
-      matchIndex = bookCursor;
-    } else {
-      // doesn't match what's expected right now — check whether you've
-      // actually moved on to one of the next few notes instead, so one
-      // wrong/missed note doesn't block everything that comes after it
-      var lastIdx = Math.min(bookCursor + BOOK_LOOKAHEAD, currentPiece.notes.length - 1);
-      for (var j = bookCursor + 1; j <= lastIdx; j++) {
-        if (currentPiece.notes[j].midi === seg.midi) { matchIndex = j; break; }
-      }
-    }
-
-    if (matchIndex === -1) {
+    if (seg.midi !== target.midi) {
       target.wrongAttempts = (target.wrongAttempts || 0) + 1;
       seg.bookStatus = "wrong-pitch";
       bookWrongFlashUntil = performance.now() + 260;
       return; // the target doesn't advance — you keep trying this note
     }
 
-    // anything jumped over on the way to the match gets marked missed,
-    // rather than silently vanishing from the score
-    for (var k = bookCursor; k < matchIndex; k++) currentPiece.notes[k].status = "missed";
-
-    var matched = currentPiece.notes[matchIndex];
-    var ratio = actualBeats / matched.beats;
+    var ratio = actualBeats / target.beats;
     seg.bookStatus = (ratio >= 0.55 && ratio <= 1.8) ? "hit" : "wrong-rhythm";
-    matched.status = seg.bookStatus;
-    matched.resolvedAtMs = endMs;
-    matched.actualBeats = actualBeats;
-    // fold this note into the running tempo estimate, but reject wild outliers
-    // (a stray double-length hold shouldn't yank the estimate around)
+    target.status = seg.bookStatus;
+    target.resolvedAtMs = endMs;
+    target.actualBeats = actualBeats;
     if (ratio > 0.35 && ratio < 3) {
-      var sample = heldMs / matched.beats;
+      var sample = heldMs / target.beats;
       bookEstBeatMs = bookEstBeatMs ? (bookEstBeatMs * 0.7 + sample * 0.3) : sample;
     }
-    bookCursor = matchIndex + 1;
+    bookCursor++;
+  }
+
+  // Re-scores the whole attempt at once by aligning the full sequence of
+  // what you actually played against the full expected sequence — standard
+  // edit-distance alignment (match on pitch / skip an expected note /
+  // skip a played note), so a note the live tracker mis-happened earlier
+  // doesn't drag everything after it out of sync. Only pitch decides the
+  // alignment itself (it's the reliable signal); duration is judged
+  // afterward, once each note's real match is already settled.
+  function realignBookAttempt() {
+    if (!currentPiece) return;
+    var expected = currentPiece.notes.slice(bookStartNote);
+    if (!expected.length) return;
+
+    expected.forEach(function (n) {
+      n.status = "pending"; n.resolvedAtMs = null; n.actualBeats = null; n.wrongAttempts = 0;
+    });
+    segments.forEach(function (s) { s.bookStatus = null; });
+
+    var played = segments.filter(function (s) {
+      return s.midi != null && s.points.length &&
+        (s.points[s.points.length - 1].ms - s.points[0].ms) >= 60;
+    }).map(function (s) {
+      var h = Math.max(1, s.points[s.points.length - 1].ms - s.points[0].ms);
+      return { midi: s.midi, startMs: s.points[0].ms, heldMs: h, seg: s };
+    });
+
+    var n = expected.length, m = played.length;
+    bookCursor = bookStartNote;
+    if (!m) { drawBookRef(); setBookRefFollow(true); return; }
+
+    var MISS = 1, EXTRA = 1, BAD = 1000;
+    var dp = [];
+    var i, j;
+    for (i = 0; i <= n; i++) dp.push(new Array(m + 1).fill(0));
+    for (i = 1; i <= n; i++) dp[i][0] = i * MISS;
+    for (j = 1; j <= m; j++) dp[0][j] = j * EXTRA;
+    for (i = 1; i <= n; i++) {
+      for (j = 1; j <= m; j++) {
+        var matchCost = expected[i - 1].midi === played[j - 1].midi ? 0 : BAD;
+        dp[i][j] = Math.min(dp[i - 1][j - 1] + matchCost, dp[i - 1][j] + MISS, dp[i][j - 1] + EXTRA);
+      }
+    }
+
+    var ops = [];
+    i = n; j = m;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && expected[i - 1].midi === played[j - 1].midi && dp[i][j] === dp[i - 1][j - 1]) {
+        ops.push({ type: "match", i: i - 1, j: j - 1 }); i--; j--;
+      } else if (i > 0 && dp[i][j] === dp[i - 1][j] + MISS) {
+        ops.push({ type: "miss", i: i - 1 }); i--;
+      } else {
+        ops.push({ type: "extra", j: j - 1 }); j--;
+      }
+    }
+    ops.reverse();
+
+    // a run of misses at the very end means you simply never got there —
+    // leave those "pending" rather than scoring them as missed
+    var lastMatch = -1;
+    ops.forEach(function (op, idx) { if (op.type === "match") lastMatch = idx; });
+
+    bookEstBeatMs = null;
+    ops.forEach(function (op, idx) {
+      if (op.type === "match") {
+        var exp = expected[op.i], pl = played[op.j];
+        var unitMs = bookEstBeatMs || (60000 / currentPiece.bpm);
+        var actualBeats = pl.heldMs / unitMs;
+        var ratio = actualBeats / exp.beats;
+        var status = (ratio >= 0.55 && ratio <= 1.8) ? "hit" : "wrong-rhythm";
+        exp.status = status;
+        exp.resolvedAtMs = pl.startMs + pl.heldMs;
+        exp.actualBeats = actualBeats;
+        pl.seg.bookStatus = status;
+        pl.seg.bookStartMs = pl.startMs;
+        pl.seg.bookGlyphBeats = snapToNoteValue(actualBeats);
+        if (ratio > 0.35 && ratio < 3) {
+          var sample = pl.heldMs / exp.beats;
+          bookEstBeatMs = bookEstBeatMs ? (bookEstBeatMs * 0.7 + sample * 0.3) : sample;
+        }
+      } else if (op.type === "miss") {
+        if (idx <= lastMatch) expected[op.i].status = "missed";
+      } else {
+        var ps = played[op.j];
+        var u2 = bookEstBeatMs || (60000 / currentPiece.bpm);
+        ps.seg.bookStatus = "wrong-pitch";
+        ps.seg.bookStartMs = ps.startMs;
+        ps.seg.bookGlyphBeats = snapToNoteValue(ps.heldMs / u2);
+      }
+    });
+
+    bookCursor = bookStartNote + (lastMatch >= 0 ? ops[lastMatch].i + 1 : 0);
+    drawBookRef();
+    setBookRefFollow(true);
   }
 
   function logBookAttempt() {
@@ -985,7 +1160,7 @@
     // standard convention: notes at/above the middle staff line point down, below point up
     return diatonicStep(midi) - E4_STEP < 4;
   }
-  function drawEngravedNote(ctx, x, y, beats, stemUp, color, alpha, scale) {
+  function drawEngravedNote(ctx, x, y, beats, stemUp, color, alpha, scale, acc) {
     scale = scale || 1;
     var g = noteGlyph(beats);
     var rx = 4.2 * scale, ry = 3.2 * scale;
@@ -1000,6 +1175,11 @@
     ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
     if (g.open) ctx.stroke(); else ctx.fill();
     ctx.restore();
+
+    if (acc) {
+      ctx.font = "600 " + Math.round(11 * scale) + "px 'JetBrains Mono', monospace";
+      ctx.fillText("#", x - rx - 10 * scale, y + 3.5 * scale);
+    }
 
     if (g.stem) {
       var stemLen = 16 * scale;
@@ -1021,13 +1201,26 @@
   }
 
   // ---------- reference strip: static, sequence-driven, waits for you ----------
-  var bookRefW = 0, bookRefH = 0;
-  var lastRefHit = []; // [{i, x}] from the last draw, for click-to-jump
+  // The reference strip is a real horizontally-scrollable canvas now (like
+  // the staff panel below it), not a small window redrawn around the
+  // cursor: every note gets a fixed slot, the cursor's position in that
+  // canvas is fixed, and centering it is done by scrolling to it — exactly
+  // the same "follow live" pattern the staff panel already uses, so you can
+  // freely scroll to look ahead/behind and a button snaps you back.
+  var REF_SLOT_W = 40;
+  var bookRefW = 0, bookRefH = 0, bookRefPad = 0;
+  var bookRefFollow = true, bookRefLastProgScrollAt = 0;
 
+  function bookRefContentWidth() {
+    var count = currentPiece ? Math.max(0, currentPiece.notes.length - bookStartNote) : 0;
+    return count * REF_SLOT_W + bookRefPad * 2;
+  }
   function fitBookRef() {
     var r = bookRefPanel.getBoundingClientRect();
-    bookRefW = r.width; bookRefH = r.height;
-    if (!bookRefW || !bookRefH) return;
+    bookRefH = r.height;
+    if (!bookRefH) return;
+    bookRefPad = Math.max(40, bookRefScroll.clientWidth / 2);
+    bookRefW = Math.max(bookRefScroll.clientWidth, bookRefContentWidth());
     bookRefCanvas.width = Math.max(1, Math.round(bookRefW * dpr));
     bookRefCanvas.height = Math.max(1, Math.round(bookRefH * dpr));
     bookRefCanvas.style.width = bookRefW + "px";
@@ -1046,17 +1239,14 @@
     var g = refStaffLayout();
     return g.bottomY - (diatonicStep(midi) - E4_STEP) * g.halfSpacing;
   }
+  function bookRefX(i) { return bookRefPad + (i - bookStartNote) * REF_SLOT_W; }
+
   function drawBookRef() {
     if (!bookRefCtx || !bookRefW) return;
     var w = bookRefW, h = bookRefH;
     bookRefCtx.clearRect(0, 0, w, h);
-    lastRefHit = [];
     if (!currentPiece) return;
 
-    // cursor note sits at the panel's horizontal center, matching the live
-    // playhead in the staff panel below, so both can be read without the
-    // eye having to jump from one side of the screen to the other
-    var slotW = 40, anchorX = w / 2;
     var g = refStaffLayout();
     bookRefCtx.strokeStyle = "#eef3fb44";
     bookRefCtx.lineWidth = 1;
@@ -1066,13 +1256,13 @@
     });
 
     var baseScale = g.halfSpacing / 9; // shrink noteheads/stems to match the compressed spacing
-    var span = Math.max(1, Math.floor((w / 2 - 10) / slotW));
-    var first = Math.max(bookStartNote, bookCursor - span);
-    var last = Math.min(currentPiece.notes.length - 1, bookCursor + span);
-    for (var i = first; i <= last; i++) {
+    var viewL = bookRefScroll.scrollLeft - REF_SLOT_W;
+    var viewR = bookRefScroll.scrollLeft + bookRefScroll.clientWidth + REF_SLOT_W;
+    for (var i = bookStartNote; i < currentPiece.notes.length; i++) {
+      var x = bookRefX(i);
+      if (x < viewL) continue;
+      if (x > viewR) break;
       var n = currentPiece.notes[i];
-      var x = anchorX + (i - bookCursor) * slotW;
-      if (x < -slotW || x > w + slotW) continue;
       var y = refStaffY(n.midi);
       var color, scale = baseScale;
       if (i < bookCursor) {
@@ -1080,24 +1270,41 @@
       } else if (i === bookCursor) { color = "#eef3fb"; scale = baseScale * 1.2; }
       else color = "#8ca0c477";
       drawEngravedNote(bookRefCtx, x, y, n.beats, stemUpFor(n.midi), color, 1, scale);
-      lastRefHit.push({ i: i, x: x });
     }
 
+    var cursorX = bookRefX(bookCursor);
     var flashing = performance.now() < bookWrongFlashUntil;
     bookRefCtx.strokeStyle = flashing ? "#ff5c5c" : "#c23b3b";
     bookRefCtx.lineWidth = flashing ? 2.6 : 1.6;
-    bookRefCtx.beginPath(); bookRefCtx.moveTo(anchorX, 6); bookRefCtx.lineTo(anchorX, h - 6); bookRefCtx.stroke();
+    bookRefCtx.beginPath(); bookRefCtx.moveTo(cursorX, 6); bookRefCtx.lineTo(cursorX, h - 6); bookRefCtx.stroke();
   }
-  bookRefCanvas.addEventListener("click", function (e) {
+
+  function setBookRefFollow(on) {
+    bookRefFollow = on;
+    bookRefLiveBtn.classList.toggle("on", on);
+    bookRefLiveBtn.textContent = on ? "● following live" : "● snap to live";
+    if (on) followBookRef();
+  }
+  bookRefScroll.addEventListener("scroll", function () {
+    if (performance.now() - bookRefLastProgScrollAt < 60) return;
+    setBookRefFollow(false);
+  });
+  bookRefLiveBtn.addEventListener("click", function () { setBookRefFollow(true); });
+  function followBookRef() {
+    if (!bookRefFollow || !currentPiece) return;
+    bookRefLastProgScrollAt = performance.now();
+    var target = bookRefX(bookCursor) - bookRefScroll.clientWidth / 2;
+    bookRefScroll.scrollLeft = Math.max(0, Math.min(bookRefScroll.scrollWidth - bookRefScroll.clientWidth, target));
+  }
+
+  // tap/click a note (before recording) to pick where practice begins
+  bookRefScroll.addEventListener("click", function (e) {
     if (!currentPiece || sessionStarted) return;
-    var rect = bookRefCanvas.getBoundingClientRect();
-    var cx = e.clientX - rect.left;
-    var best = null, bestDiff = Infinity;
-    lastRefHit.forEach(function (h) {
-      var diff = Math.abs(h.x - cx);
-      if (diff < bestDiff) { bestDiff = diff; best = h.i; }
-    });
-    if (best !== null) setBookStart(best);
+    var rect = bookRefScroll.getBoundingClientRect();
+    var cx = (e.clientX - rect.left) + bookRefScroll.scrollLeft;
+    var idx = bookStartNote + Math.round((cx - bookRefPad) / REF_SLOT_W);
+    idx = Math.max(0, Math.min(currentPiece.notes.length - 1, idx));
+    setBookStart(idx);
   });
 
   // ---------- staff panel: real time, shows what you actually played ----------
@@ -1126,6 +1333,35 @@
       staffCtx.beginPath(); staffCtx.moveTo(0, ty); staffCtx.lineTo(w, ty); staffCtx.stroke();
       staffCtx.restore();
       drawEngravedNote(staffCtx, xOf(activeMs), ty, target.beats, stemUpFor(target.midi), "#c98a3a", 1, 1.1);
+    }
+  }
+
+  // one neutral ink color for clean rhythm, shading toward a single accent
+  // hue (not three discrete colors) the further off a note was — a gradient
+  // on one dimension, not a category to interpret
+  function lerpColor(hex1, hex2, t) {
+    var c1 = parseInt(hex1.slice(1), 16), c2 = parseInt(hex2.slice(1), 16);
+    var r1 = (c1 >> 16) & 255, g1 = (c1 >> 8) & 255, b1 = c1 & 255;
+    var r2 = (c2 >> 16) & 255, g2 = (c2 >> 8) & 255, b2 = c2 & 255;
+    var r = Math.round(r1 + (r2 - r1) * t), g = Math.round(g1 + (g2 - g1) * t), b = Math.round(b1 + (b2 - b1) * t);
+    return "rgb(" + r + "," + g + "," + b + ")";
+  }
+
+  // Staff mode has no loaded piece, so there's nothing to grade against —
+  // this just reads each note's own rhythm off the Beat/BPM setting and, for
+  // genuinely back-to-back same-type notes, shows how consistent they were
+  // with each other (see analyzeStaffRhythm).
+  function drawStaffRhythmOverlay(w) {
+    for (var s = 0; s < segments.length; s++) {
+      var seg = segments[s];
+      if (seg.rhythmBeats == null || seg.rhythmStartMs == null) continue;
+      var x = xOf(seg.rhythmStartMs);
+      if (x < -14 || x > w + 14) continue;
+      var y = pitchScaled ? pitchScaleY(seg.midi) : staffY(seg.midi);
+      var magnitude = seg.rhythmPairDeltaPct != null ? Math.abs(seg.rhythmPairDeltaPct) : Math.abs(seg.rhythmOffPct);
+      var t = Math.max(0, Math.min(1, (magnitude - 8) / 42)); // <8% off reads as clean; 50%+ is fully flagged
+      var color = lerpColor("#eef3fb", "#c98a3a", t);
+      drawEngravedNote(staffCtx, x, y, seg.rhythmBeats, stemUpFor(seg.midi), color, 1, 1.8, SHARP_BY_PC[pc(seg.midi)]);
     }
   }
 
@@ -1174,9 +1410,10 @@
     });
 
     // dots: snapped to the nearest note's line, or plotted at true continuous pitch
-    // (semi-transparent in Book Practice, so the reference notes underneath stay readable)
+    // (semi-transparent in Book Practice and Staff, so the engraved notes
+    // overlaid on top of them stay readable)
     staffCtx.fillStyle = "#eef3fb";
-    staffCtx.globalAlpha = activeTab === "book" ? 0.55 : 1;
+    staffCtx.globalAlpha = activeTab === "book" ? 0.55 : (activeTab === "staff" && staffRhythmOn) ? 0.3 : 1;
     for (var n = 0; n < scatterPoints.length; n++) {
       var p = scatterPoints[n];
       var x = xOf(p.ms);
@@ -1195,6 +1432,7 @@
     staffCtx.globalAlpha = 1;
 
     if (activeTab === "book") drawBookTarget(w);
+    if (activeTab === "staff" && staffRhythmOn) drawStaffRhythmOverlay(w);
   }
 
   // ---------- contour panel (SoundCorset-style) ----------
@@ -1365,6 +1603,7 @@
     if (!curSegment) return;
     segments.push(curSegment);
     if (activeTab === "book") processPlayedSegment(curSegment, atMs);
+    else if (activeTab === "staff" && staffRhythmOn) analyzeStaffRhythm(curSegment, atMs);
     curSegment = null;
   }
 
@@ -1464,7 +1703,7 @@
     }
 
     if (isStaffLike(activeTab)) drawStaff(); else drawContour();
-    if (activeTab === "book") drawBookRef();
+    if (activeTab === "book") { drawBookRef(); followBookRef(); }
     drawTimeAxis();
     followScroll();
 
