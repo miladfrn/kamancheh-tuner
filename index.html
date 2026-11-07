@@ -103,7 +103,7 @@
     flex-direction: column;
     gap: 8px;
   }
-  #actionRow { display: flex; justify-content: flex-end; }
+  #actionRow { display: flex; justify-content: flex-end; height: 46px; }
   #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 162px; }
   button.startBtn {
     flex: 1 1 0;
@@ -118,7 +118,7 @@
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
   #liveNote { width: 100%; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; }
-  #liveNoteName { font-weight: 600; font-size: 32px; transition: color 120ms ease; flex: 0 0 auto; }
+  #liveNoteName { font-weight: 600; font-size: 60px; line-height: 1; transition: color 120ms ease; flex: 0 0 auto; }
   #liveNoteName sup { font-size: 0.48em; vertical-align: 55%; }
   #liveNoteName sub { font-size: 0.48em; vertical-align: -15%; }
   #liveNoteStack { display: flex; flex-direction: column; gap: 1px; flex: 0 0 auto; line-height: 1.15; }
@@ -634,11 +634,16 @@
 
   function usedWidthPx() { return Math.min(MAX_SECONDS, activeMs / 1000) * PX_PER_SEC; }
 
-  var lastCanvasWidthPx = -1;
+  var lastCanvasWidthPx = -1, lastPanelHForResize = -1;
   function resizeCanvasesToWidth(px) {
     px = Math.max(1, Math.round(px));
-    if (Math.abs(px - lastCanvasWidthPx) < 4) return;
+    // also re-apply when only the panel height changed (e.g. a delayed
+    // layout-settle remeasure on mobile Safari) — skipping that left the
+    // canvas's own pixel height stale, clipping the lower staff lines even
+    // though draw coordinates were already correct for the new panelH.
+    if (Math.abs(px - lastCanvasWidthPx) < 4 && Math.abs(panelH - lastPanelHForResize) < 1) return;
     lastCanvasWidthPx = px;
+    lastPanelHForResize = panelH;
     scopeInner.style.width = px + "px";
     [ [contourCanvas, contourCtx, panelH], [staffCanvas, staffCtx, panelH], [timeAxisCanvas, timeAxisCtx, AXIS_H] ].forEach(function (t) {
       var cv = t[0], ctx = t[1], h = t[2];
