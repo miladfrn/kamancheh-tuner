@@ -6,26 +6,29 @@
 <meta name="theme-color" content="#14110f">
 <title>Kamancheh Tuner</title>
 <meta name="robots" content="noindex, nofollow, noarchive">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   /*
-    Layout concept: the pitch/waveform panel fills nearly the whole screen
-    (the user's main complaint was too little waveform real estate); a thin
-    transport strip pins to the bottom for tempo + A/B loop + record.
-    Color: warm dark wood/strings palette, not a generic app dark theme.
-    Type: Spectral (display, serif — evokes notation/manuscript) + JetBrains
-    Mono (numbers: cents, BPM, time) for tabular precision.
+    Layout: two stacked, horizontally scrollable panels on a shared rolling
+    4-minute timeline — a SoundCorset-style cents/pitch contour on top, a
+    real 5-line staff (noteheads with duration symbols + ledger lines)
+    below. A thin transport strip pins to the bottom.
+    Color: warm dark wood/strings palette. Contour and staff notation are
+    deliberately single-color (neutral) — there is no expected score to
+    compare against, so only rhythm (on/off the metronome beat) gets the
+    red/white judgement, and only on the staff noteheads.
+    Type: Spectral (display, serif) + JetBrains Mono (numbers).
   */
   :root {
     --bg: #14110f;
     --panel: #1c1813;
     --panel-2: #241e17;
     --line: #3a3024;
+    --grid: #ffffff14;
+    --grid-strong: #ffffff22;
+    --band: #c98a3a1f;
     --fg: #f2ead9;
     --fg-dim: #a89a80;
     --accent: #c98a3a;
@@ -48,6 +51,16 @@
   }
   .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
+  html.force-landscape, html.force-landscape body { overflow: hidden; }
+  html.force-landscape #app {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vh;
+    height: 100vw;
+    transform-origin: top left;
+    transform: rotate(90deg) translateY(-100%);
+  }
+
   #app {
     display: flex;
     flex-direction: column;
@@ -69,6 +82,7 @@
     letter-spacing: 0.01em;
   }
   header h1 span { color: var(--accent); }
+  header .right { display: flex; align-items: center; gap: 6px; }
   #a4 {
     font-size: 11px;
     color: var(--fg-dim);
@@ -90,8 +104,14 @@
     text-align: right;
   }
   #a4 input:focus { outline: none; }
+  #rotateToggle {
+    width: 30px; height: 30px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--panel); border: 1px solid var(--line); color: var(--fg-dim);
+    font-size: 14px; padding: 0;
+  }
 
-  /* ---- main pitch display: the big area ---- */
+  /* ---- main pitch display ---- */
   #main {
     flex: 1 1 auto;
     min-height: 0;
@@ -104,7 +124,7 @@
   #gaugeWrap {
     position: relative;
     flex: 0 0 auto;
-    padding-top: 6px;
+    padding-top: 4px;
   }
   #noteRow {
     display: flex;
@@ -113,23 +133,23 @@
     gap: 14px;
   }
   #noteName {
-    font-size: min(16vw, 110px);
+    font-size: min(14vw, 92px);
     line-height: 1;
     font-weight: 600;
     transition: color 120ms ease;
   }
   #cents {
     text-align: center;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--fg-dim);
-    margin-top: -6px;
+    margin-top: -4px;
   }
-  #cents b { color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 17px; }
+  #cents b { color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 16px; }
 
-  #needleSvg { width: 100%; height: 46px; display: block; }
+  #needleSvg { width: 100%; height: 40px; display: block; }
 
-  /* ---- waveform / pitch history: now the dominant element ---- */
-  #scopeWrap {
+  /* ---- two scrollable timeline panels ---- */
+  #scopeOuter {
     flex: 1 1 auto;
     min-height: 0;
     background: var(--panel);
@@ -137,28 +157,78 @@
     border-radius: 14px;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: row;
   }
-  #scope { width: 100%; height: 100%; display: block; }
-  #scopeLabel {
-    position: absolute;
-    top: 8px;
-    left: 12px;
-    font-size: 10px;
-    letter-spacing: 0.08em;
+  #scopeGutter {
+    flex: 0 0 28px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--line);
+  }
+  #centsAxis {
+    flex: 0 0 58%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--fg-dim);
+    text-align: center;
+  }
+  #centsAxis span:nth-child(5) { color: var(--string); font-weight: 700; }
+  #staffGutterLabel {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 9px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--fg-dim);
   }
-  #rhythmLegend {
+  #scopeScroll {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+  #scopeInner {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  #contourCanvas { flex: 0 0 58%; display: block; }
+  #staffCanvas { flex: 1 1 auto; display: block; border-top: 1px solid var(--line); }
+
+  #scopeLegend {
     position: absolute;
-    top: 8px;
-    right: 12px;
-    font-size: 10px;
+    top: 6px;
+    right: 10px;
+    font-size: 9.5px;
     color: var(--fg-dim);
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    pointer-events: none;
+    background: #1c1813cc;
+    padding: 2px 6px;
+    border-radius: 6px;
   }
-  #rhythmLegend span { display: flex; align-items: center; gap: 4px; }
-  #rhythmLegend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  #scopeLegend span { display: flex; align-items: center; gap: 3px; }
+  #scopeLegend i { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
+
+  #liveBtn {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    font-size: 10px;
+    padding: 6px 10px;
+  }
 
   /* ---- transport strip ---- */
   #transport {
@@ -194,6 +264,7 @@
   button.danger.on { background: var(--bad); border-color: var(--bad); color: #220a06; }
   button:disabled { opacity: 0.4; }
   button.icon { padding: 9px; width: 38px; justify-content: center; flex: 0 0 auto; }
+  button.ghost { background: transparent; }
 
   #bpmBlock { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
   #bpmNum { font-size: 22px; font-weight: 700; width: 3.2ch; text-align: center; flex: 0 0 auto; }
@@ -240,13 +311,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 14px;
     text-align: center;
     padding: 0 32px;
     z-index: 50;
   }
   #status h2 { font-size: 20px; margin: 0; }
   #status p { color: var(--fg-dim); font-size: 14px; max-width: 46ch; margin: 0; }
+  #rotateChoice { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  #rotateChoice .row { gap: 8px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -255,7 +328,10 @@
 
   <header>
     <h1>Kaman<span>cheh</span> Tuner</h1>
-    <label id="a4">A4<input id="a4input" type="number" value="440" step="1" inputmode="numeric"></label>
+    <div class="right">
+      <button id="rotateToggle" hidden title="Rotate view">⤢</button>
+      <label id="a4">A4<input id="a4input" type="number" value="440" step="1" inputmode="numeric"></label>
+    </div>
   </header>
 
   <div id="main">
@@ -265,20 +341,29 @@
       </div>
       <div id="cents">cents off: <b id="centsVal">0</b></div>
       <svg id="needleSvg" viewBox="0 0 320 60" preserveAspectRatio="xMidYMid meet">
-        <line id="needleTick0" x1="20" y1="10" x2="20" y2="18" stroke="#3a3024" stroke-width="2"/>
         <line id="needleTick50" x1="160" y1="6" x2="160" y2="20" stroke="#c98a3a" stroke-width="2"/>
-        <line id="needleTick100" x1="300" y1="10" x2="300" y2="18" stroke="#3a3024" stroke-width="2"/>
         <line id="needle" x1="160" y1="2" x2="160" y2="58" stroke="#f2ead9" stroke-width="3" stroke-linecap="round"/>
       </svg>
     </div>
 
-    <div id="scopeWrap">
-      <div id="scopeLabel">Pitch trace</div>
-      <div id="rhythmLegend">
+    <div id="scopeOuter">
+      <div id="scopeGutter">
+        <div id="centsAxis">
+          <span>40</span><span>30</span><span>20</span><span>10</span><span>0</span><span>-10</span><span>-20</span><span>-30</span><span>-40</span>
+        </div>
+        <div id="staffGutterLabel">staff</div>
+      </div>
+      <div id="scopeScroll">
+        <div id="scopeInner">
+          <canvas id="contourCanvas"></canvas>
+          <canvas id="staffCanvas"></canvas>
+        </div>
+      </div>
+      <div id="scopeLegend">
         <span><i style="background:var(--good)"></i>on beat</span>
         <span><i style="background:var(--bad)"></i>off beat</span>
       </div>
-      <canvas id="scope"></canvas>
+      <button id="liveBtn" class="ghost" hidden>● live</button>
     </div>
   </div>
 
@@ -320,6 +405,13 @@
   <h2>Microphone access needed</h2>
   <p id="statusMsg">This tuner listens to your kamancheh through the microphone to show pitch and rhythm in real time. Nothing is recorded or sent anywhere — it all stays on this device.</p>
   <button id="statusBtn" class="primary">Allow microphone</button>
+  <div id="rotateChoice" hidden>
+    <p class="hint" style="max-width:40ch">On a phone, this tuner reads better sideways. If your screen rotation is locked, I can rotate the view in software instead.</p>
+    <div class="row">
+      <button id="rotateYes" class="primary">Rotate & allow mic</button>
+      <button id="rotateNo">Keep portrait</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -328,16 +420,22 @@
 
   // ---------- note / pitch math ----------
   var NOTE_NAMES = ["Do","Do#","Re","Re#","Mi","Fa","Fa#","Sol","Sol#","La","La#","Si"];
+  var LETTER_BY_PC = ["C","C","D","D","E","F","F","G","G","A","A","B"];
+  var SHARP_BY_PC  = [false,true,false,true,false,false,true,false,true,false,true,false];
+  var DIATONIC_INDEX = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
   var a4 = 440;
+  var MIDI_MIN = 36, MIDI_MAX = 100; // plausible kamancheh+voice range; clamps octave-error glitches
 
-  function freqToNote(freq) {
-    var midi = 69 + 12 * Math.log2(freq / a4);
-    var rounded = Math.round(midi);
-    var cents = Math.round((midi - rounded) * 100);
-    var name = NOTE_NAMES[((rounded % 12) + 12) % 12];
-    var octave = Math.floor(rounded / 12) - 1;
-    return { name: name, octave: octave, cents: cents, midi: rounded };
+  function pc(midi) { return ((midi % 12) + 12) % 12; }
+  function midiOctave(midi) { return Math.floor(midi / 12) - 1; }
+  function noteLabel(midi) {
+    return NOTE_NAMES[pc(midi)] + midiOctave(midi);
   }
+  function diatonicStep(midi) {
+    var letter = LETTER_BY_PC[pc(midi)];
+    return DIATONIC_INDEX[letter] + 7 * midiOctave(midi);
+  }
+  var E4_STEP = diatonicStep(64); // bottom staff line reference
 
   // Autocorrelation pitch detector (ACF2+), good for monophonic bowed strings and voice.
   function autoCorrelate(buf, sampleRate) {
@@ -363,17 +461,20 @@
     var T0 = maxpos;
     if (T0 <= 0) return -1;
     var x1 = c[T0 - 1] || c[T0], x2 = c[T0], x3 = c[T0 + 1] || c[T0];
-    var a = (x1 + x3 - 2 * x2) / 2, b = (x3 - x1) / 2;
-    if (a) T0 = T0 - b / (2 * a);
+    var aa = (x1 + x3 - 2 * x2) / 2, bb = (x3 - x1) / 2;
+    if (aa) T0 = T0 - bb / (2 * aa);
     return sampleRate / T0;
   }
 
   // ---------- DOM refs ----------
   var $ = function (id) { return document.getElementById(id); };
   var statusEl = $("status"), statusMsg = $("statusMsg"), statusBtn = $("statusBtn");
+  var rotateChoice = $("rotateChoice"), rotateYes = $("rotateYes"), rotateNo = $("rotateNo"), rotateToggle = $("rotateToggle");
   var micBtn = $("micBtn"), hintText = $("hintText");
   var noteName = $("noteName"), centsVal = $("centsVal"), needle = $("needle");
-  var scope = $("scope"), scopeCtx = scope.getContext("2d");
+  var contourCanvas = $("contourCanvas"), contourCtx = contourCanvas.getContext("2d");
+  var staffCanvas = $("staffCanvas"), staffCtx = staffCanvas.getContext("2d");
+  var scopeScroll = $("scopeScroll"), scopeInner = $("scopeInner"), liveBtn = $("liveBtn");
   var a4input = $("a4input");
 
   var metroBtn = $("metroBtn"), bpmRow = $("bpmRow"), bpmNum = $("bpmNum");
@@ -386,6 +487,25 @@
     if (v && v > 300 && v < 600) a4 = v;
   });
 
+  // ---------- mobile / rotate ----------
+  function isMobile() {
+    var ua = navigator.userAgent || "";
+    if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+    try {
+      return window.matchMedia("(pointer: coarse)").matches && Math.min(window.innerWidth, window.innerHeight) < 700;
+    } catch (e) { return false; }
+  }
+  function setRotated(on) {
+    document.documentElement.classList.toggle("force-landscape", on);
+    rotateToggle.hidden = false;
+    setTimeout(fitScopes, 60);
+  }
+  rotateYes.addEventListener("click", function () { setRotated(true); startMic(); });
+  rotateNo.addEventListener("click", function () { startMic(); });
+  rotateToggle.addEventListener("click", function () {
+    setRotated(!document.documentElement.classList.contains("force-landscape"));
+  });
+
   // ---------- audio graph ----------
   var audioCtx = null, analyser = null, sourceNode = null, gainNode = null, buf = null;
   var running = false;
@@ -396,6 +516,11 @@
       statusMsg.textContent = "Microphone access requires HTTPS (or localhost). Host this page over HTTPS — e.g. GitHub Pages — then reopen it there.";
       statusBtn.disabled = true;
       statusBtn.textContent = "Needs HTTPS";
+      return;
+    }
+    if (isMobile()) {
+      statusBtn.hidden = true;
+      rotateChoice.hidden = false;
     }
   }
   initStatusGate();
@@ -418,9 +543,12 @@
       micBtn.textContent = "■ Stop mic";
       micBtn.classList.add("on");
       hintText.textContent = "Listening…";
+      fitScopes();
       requestAnimationFrame(loop);
     }).catch(function (err) {
       statusMsg.textContent = "Microphone permission was denied or unavailable (" + err.message + "). Allow mic access in your browser's site settings and reload.";
+      rotateChoice.hidden = true;
+      statusBtn.hidden = false;
     });
   }
 
@@ -437,23 +565,58 @@
   micBtn.addEventListener("click", function () { running ? stopMic() : startMic(); });
   statusBtn.addEventListener("click", startMic);
 
-  // ---------- pitch -> UI ----------
-  var pitchHistory = []; // {t, note, cents, freq, onset}
-  var lastRms = 0, onsetCooldown = 0;
+  // ---------- committed-note smoothing (kills frame jitter + octave-error spikes) ----------
+  var committedMidi = null, committedCentsEMA = 0;
+  var candidateMidi = null, candidateSince = 0;
+  var DEBOUNCE_MS = 90, EMA_ALPHA = 0.35;
+  var noteJustCommitted = false;
 
-  function updatePitchUI(freq) {
-    if (freq < 0) {
-      noteName.style.color = "var(--fg-dim)";
+  function feedPitch(freq, now) {
+    noteJustCommitted = false;
+    if (freq <= 0) return;
+    var m = 69 + 12 * Math.log2(freq / a4);
+    var rounded = Math.round(m);
+    if (rounded < MIDI_MIN || rounded > MIDI_MAX) return; // implausible: ignore this frame
+    var cents = (m - rounded) * 100;
+
+    if (committedMidi === null) {
+      committedMidi = rounded; committedCentsEMA = cents; candidateMidi = null;
+      noteJustCommitted = true;
       return;
     }
-    var n = freqToNote(freq);
-    noteName.textContent = n.name + n.octave;
-    centsVal.textContent = (n.cents > 0 ? "+" : "") + n.cents;
-    var inTune = Math.abs(n.cents) <= 8;
-    noteName.style.color = inTune ? "var(--string)" : (Math.abs(n.cents) <= 20 ? "var(--fg)" : "var(--bad)");
+    if (rounded === committedMidi) {
+      committedCentsEMA += EMA_ALPHA * (cents - committedCentsEMA);
+      candidateMidi = null;
+      return;
+    }
+    if (candidateMidi === rounded) {
+      if (now - candidateSince >= DEBOUNCE_MS) {
+        committedMidi = rounded; committedCentsEMA = cents; candidateMidi = null;
+        noteJustCommitted = true;
+      }
+    } else {
+      candidateMidi = rounded; candidateSince = now;
+    }
+  }
+  function resetCommitted() {
+    committedMidi = null; committedCentsEMA = 0; candidateMidi = null;
+  }
 
-    var clamped = Math.max(-50, Math.min(50, n.cents));
-    var angle = (clamped / 50) * 70; // degrees
+  function updatePitchUI() {
+    if (committedMidi === null) {
+      noteName.textContent = "–";
+      noteName.style.color = "var(--fg-dim)";
+      centsVal.textContent = "0";
+      return;
+    }
+    var c = Math.round(committedCentsEMA);
+    noteName.textContent = noteLabel(committedMidi);
+    centsVal.textContent = (c > 0 ? "+" : "") + c;
+    var inTune = Math.abs(c) <= 8;
+    noteName.style.color = inTune ? "var(--string)" : (Math.abs(c) <= 20 ? "var(--fg)" : "var(--bad)");
+
+    var clamped = Math.max(-50, Math.min(50, c));
+    var angle = (clamped / 50) * 70;
     var rad = (angle - 90) * Math.PI / 180;
     var cx = 160, cy = 58, len = 54;
     needle.setAttribute("x2", (cx + len * Math.cos(rad)).toFixed(1));
@@ -461,110 +624,265 @@
     needle.setAttribute("stroke", inTune ? "#e8e0cc" : "#d6553f");
   }
 
-  // ---------- scope (waveform + pitch trace + rhythm markers) ----------
-  var scopeW = 0, scopeH = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
-  function fitScope() {
-    var rect = scope.parentElement.getBoundingClientRect();
-    scopeW = rect.width; scopeH = rect.height;
-    scope.width = scopeW * dpr; scope.height = scopeH * dpr;
-    scope.style.width = scopeW + "px"; scope.style.height = scopeH + "px";
-    scopeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // ---------- shared rolling timeline ----------
+  var PX_PER_SEC = 32;
+  var MAX_SECONDS = 240; // 4 minutes
+  var CAP_PX = PX_PER_SEC * MAX_SECONDS;
+  var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+  var NOISE_FLOOR = 0.0035;
+  var SILENCE_HOLD_MS = 550;
+  var soundActive = false, lastSoundAt = 0;
+  var activeMs = 0, lastFrameNow = null; // activeMs only advances while sound is present
+  var windowStart = 0; // ms, left edge of the visible 4-min window
+
+  var segments = [];     // contour runs: {midi, startMs, endMs, cents}
+  var curSegment = null;
+  var staffNotes = [];   // {ms, midi, cents, hit, durBeats}
+  var lastOnsetMs = -1;
+
+  var contourW = 0, contourH = 0, staffH = 0;
+  var followMode = true, lastProgScrollAt = 0;
+
+  function fitScopes() {
+    var rect = scopeScroll.getBoundingClientRect();
+    contourH = contourCanvas.getBoundingClientRect().height || Math.round(rect.height * 0.58);
+    staffH = staffCanvas.getBoundingClientRect().height || Math.round(rect.height * 0.42);
+    resizeCanvasesToWidth(Math.max(rect.width, usedWidthPx()));
   }
-  window.addEventListener("resize", fitScope);
-  fitScope();
+  window.addEventListener("resize", fitScopes);
 
-  var trace = []; // rolling cents-deviation trace, newest last: {t, cents}
-  var labels = []; // note-name labels placed along the trace: {t, cents, text, inTune}
-  var TRACE_SECONDS = 6;
-  var beatMarks = []; // {t: 0..1 position in current window, hit: bool}
+  function usedWidthPx() {
+    return Math.min(MAX_SECONDS, activeMs / 1000) * PX_PER_SEC;
+  }
 
-  var NOISE_FLOOR = 0.0035;      // post-gain rms above which we consider "sound present"
-  var SILENCE_HOLD_MS = 550;     // keep the window running through brief gaps (bow changes, breaths)
-  var soundActive = false, lastSoundAt = 0, windowStart = 0, frozenT = 0;
-  var lastLabelKey = null, lastLabelX = -999;
+  var lastCanvasWidthPx = -1;
+  function resizeCanvasesToWidth(px) {
+    px = Math.max(1, Math.round(px));
+    if (Math.abs(px - lastCanvasWidthPx) < 4) return;
+    lastCanvasWidthPx = px;
+    scopeInner.style.width = px + "px";
+    [ [contourCanvas, contourCtx, contourH], [staffCanvas, staffCtx, staffH] ].forEach(function (t) {
+      var cv = t[0], ctx = t[1], h = t[2];
+      cv.width = px * dpr; cv.height = h * dpr;
+      cv.style.width = px + "px"; cv.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+  }
 
-  function drawScope(timeBuf) {
-    scopeCtx.clearRect(0, 0, scopeW, scopeH);
+  function xOf(ms) { return (ms - windowStart) / 1000 * PX_PER_SEC; }
 
-    // faint center line + tuning band
-    var midY = scopeH * 0.42;
-    scopeCtx.strokeStyle = "#3a302466";
-    scopeCtx.lineWidth = 1;
-    scopeCtx.beginPath();
-    scopeCtx.moveTo(0, midY); scopeCtx.lineTo(scopeW, midY);
-    scopeCtx.stroke();
+  // ---------- staff geometry ----------
+  function staffLayout() {
+    var pad = 14;
+    var usable = staffH - pad * 2;
+    var spacing = usable / 4; // 5 lines -> 4 gaps
+    var bottomY = staffH - pad;
+    return { spacing: spacing, halfSpacing: spacing / 2, bottomY: bottomY, pad: pad };
+  }
+  function staffY(midi) {
+    var g = staffLayout();
+    var step = diatonicStep(midi) - E4_STEP; // 0 = bottom line (E4) .. 8 = top line (F5)
+    return g.bottomY - step * g.halfSpacing;
+  }
 
-    // live waveform across the bottom band
-    var waveTop = scopeH * 0.55, waveH = scopeH * 0.4;
-    scopeCtx.strokeStyle = "#c98a3a";
-    scopeCtx.lineWidth = 1.5;
-    scopeCtx.beginPath();
-    var step = Math.max(1, Math.floor(timeBuf.length / scopeW));
-    for (var x = 0; x < scopeW; x++) {
-      var idx = x * step;
-      var v = timeBuf[idx] || 0;
-      var y = waveTop + waveH / 2 - v * waveH * 0.48;
-      if (x === 0) scopeCtx.moveTo(x, y); else scopeCtx.lineTo(x, y);
+  function beatMs() { return 60000 / bpm; }
+  function quantizeDuration(intervalMs) {
+    var beats = intervalMs / beatMs();
+    var options = [4, 2, 1, 0.5, 0.25];
+    var best = 1, bestDist = Infinity;
+    for (var i = 0; i < options.length; i++) {
+      var d = Math.abs(Math.log(beats / options[i]));
+      if (d < bestDist) { bestDist = d; best = options[i]; }
     }
-    scopeCtx.stroke();
+    return best;
+  }
 
-    // pitch deviation trace across the top band (cents, clamped +-50)
-    var top = scopeH * 0.06, bandH = scopeH * 0.42;
-    if (trace.length > 1) {
-      scopeCtx.lineWidth = 2;
-      for (var i = 1; i < trace.length; i++) {
-        var p0 = trace[i - 1], p1 = trace[i];
-        var x0 = (p0.t) * scopeW, x1 = (p1.t) * scopeW;
-        var y0 = top + bandH / 2 - (p0.cents / 50) * (bandH / 2);
-        var y1 = top + bandH / 2 - (p1.cents / 50) * (bandH / 2);
-        scopeCtx.strokeStyle = Math.abs(p1.cents) <= 8 ? "#e8e0cc" : (Math.abs(p1.cents) <= 20 ? "#c98a3a" : "#d6553f");
-        scopeCtx.beginPath();
-        scopeCtx.moveTo(x0, y0); scopeCtx.lineTo(x1, y1);
-        scopeCtx.stroke();
+  function drawNoteSymbol(ctx, x, y, durBeats, color) {
+    var g = staffLayout();
+    var r = Math.max(3.2, g.halfSpacing * 0.62);
+    var stemUp = y > g.bottomY - 4 * g.halfSpacing; // below middle line -> stem up
+    var stemLen = g.spacing * 3.4;
+    var filled = durBeats <= 1;
+    var hasStem = durBeats <= 2;
+    var flags = durBeats === 0.5 ? 1 : (durBeats === 0.25 ? 2 : 0);
+
+    ctx.save();
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.4;
+
+    // notehead (slightly tilted ellipse, classic notation look)
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.74, -0.35, 0, Math.PI * 2);
+    if (filled) ctx.fill(); else { ctx.lineWidth = 1.6; ctx.stroke(); }
+
+    if (hasStem) {
+      var stemX = stemUp ? x + r - 1 : x - r + 1;
+      var tipY = stemUp ? y - stemLen : y + stemLen;
+      ctx.beginPath();
+      ctx.moveTo(stemX, y);
+      ctx.lineTo(stemX, tipY);
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+
+      for (var f = 0; f < flags; f++) {
+        var fy = tipY + (stemUp ? f * 6 : -f * 6);
+        ctx.beginPath();
+        if (stemUp) {
+          ctx.moveTo(stemX, fy);
+          ctx.quadraticCurveTo(stemX + 9, fy + 5, stemX + 2, fy + 14);
+        } else {
+          ctx.moveTo(stemX, fy);
+          ctx.quadraticCurveTo(stemX - 9, fy - 5, stemX - 2, fy - 14);
+        }
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
       }
     }
+    ctx.restore();
+  }
 
-    // rhythm onset markers: vertical lines, white=on-beat, red=off-beat
-    for (var m = 0; m < beatMarks.length; m++) {
-      var mk = beatMarks[m];
-      var mx = mk.t * scopeW;
-      scopeCtx.strokeStyle = mk.hit ? "#e8e0cc" : "#d6553f";
-      scopeCtx.globalAlpha = 0.85;
-      scopeCtx.lineWidth = 2;
-      scopeCtx.beginPath();
-      scopeCtx.moveTo(mx, 0); scopeCtx.lineTo(mx, scopeH);
-      scopeCtx.stroke();
-      scopeCtx.globalAlpha = 1;
+  function drawLedgerLines(ctx, x, midi, color) {
+    var g = staffLayout();
+    var step = diatonicStep(midi) - E4_STEP;
+    var r = Math.max(5, g.halfSpacing * 1.15);
+    ctx.save();
+    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.85;
+    if (step < 0) {
+      for (var s = -2; s >= step - (step % 2 === 0 ? 0 : 1); s -= 2) {
+        if (s > 0) continue;
+        var y = g.bottomY - s * g.halfSpacing;
+        ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.stroke();
+      }
+    } else if (step > 8) {
+      for (var s2 = 10; s2 <= step + (step % 2 === 0 ? 0 : 1); s2 += 2) {
+        var y2 = g.bottomY - s2 * g.halfSpacing;
+        ctx.beginPath(); ctx.moveTo(x - r, y2); ctx.lineTo(x + r, y2); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawStaff() {
+    staffCtx.clearRect(0, 0, lastCanvasWidthPx, staffH);
+    var g = staffLayout();
+    var w = lastCanvasWidthPx;
+
+    // 5 staff lines
+    staffCtx.strokeStyle = "#f2ead966";
+    staffCtx.lineWidth = 1;
+    for (var i = 0; i < 5; i++) {
+      var y = g.bottomY - i * 2 * g.halfSpacing;
+      staffCtx.beginPath(); staffCtx.moveTo(0, y); staffCtx.lineTo(w, y); staffCtx.stroke();
     }
 
-    // note-name labels along the pitch trace, like a notated line
-    scopeCtx.font = "600 13px 'JetBrains Mono', monospace";
-    scopeCtx.textBaseline = "alphabetic";
-    for (var li = 0; li < labels.length; li++) {
-      var lb = labels[li];
-      var lx = lb.t * scopeW;
-      var ly = top + bandH / 2 - (lb.cents / 50) * (bandH / 2);
-      scopeCtx.fillStyle = Math.abs(lb.cents) <= 8 ? "#e8e0cc" : (Math.abs(lb.cents) <= 20 ? "#c98a3a" : "#d6553f");
-      scopeCtx.fillText(lb.text, Math.min(Math.max(lx + 4, 2), scopeW - 40), Math.max(ly - 8, 14));
+    for (var n = 0; n < staffNotes.length; n++) {
+      var note = staffNotes[n];
+      var x = xOf(note.ms);
+      if (x < -20 || x > w + 20) continue;
+      var y = staffY(note.midi);
+      var color = note.hit === true ? "#e8e0cc" : (note.hit === false ? "#d6553f" : "#c98a3a");
+
+      drawLedgerLines(staffCtx, x, note.midi, "#f2ead988");
+      if (SHARP_BY_PC[pc(note.midi)]) {
+        staffCtx.save();
+        staffCtx.fillStyle = color;
+        staffCtx.font = "600 11px 'JetBrains Mono', monospace";
+        staffCtx.fillText("#", x - g.halfSpacing * 1.9, y + 4);
+        staffCtx.restore();
+      }
+      drawNoteSymbol(staffCtx, x, y, note.durBeats, color);
+
+      staffCtx.save();
+      staffCtx.fillStyle = "#a89a80";
+      staffCtx.font = "500 9px 'JetBrains Mono', monospace";
+      staffCtx.textAlign = "center";
+      var cTxt = (note.cents > 0 ? "+" : "") + note.cents;
+      staffCtx.fillText(cTxt, x, g.bottomY + 16);
+      staffCtx.restore();
     }
 
-    if (!soundActive) {
-      scopeCtx.fillStyle = "#a89a8099";
-      scopeCtx.font = "500 11px 'JetBrains Mono', monospace";
-      scopeCtx.fillText("listening…", 10, scopeH - 10);
+    if (!soundActive && staffNotes.length === 0) {
+      staffCtx.fillStyle = "#a89a8099";
+      staffCtx.font = "500 11px 'JetBrains Mono', monospace";
+      staffCtx.fillText("notes appear here as you play on the beat", 8, staffH / 2 + 4);
     }
+  }
+
+  // ---------- contour panel (SoundCorset-style) ----------
+  function drawContour() {
+    var w = lastCanvasWidthPx, h = contourH;
+    contourCtx.clearRect(0, 0, w, h);
+
+    var top = 4, bandH = h - 8;
+    function yOfCents(c) { return top + bandH / 2 - (Math.max(-50, Math.min(50, c)) / 50) * (bandH / 2); }
+
+    // in-tune band (+-10 cents)
+    contourCtx.fillStyle = "#c98a3a1f";
+    contourCtx.fillRect(0, yOfCents(10), w, yOfCents(-10) - yOfCents(10));
+
+    // grid
+    contourCtx.strokeStyle = "#ffffff14";
+    contourCtx.lineWidth = 1;
+    for (var c = -40; c <= 40; c += 10) {
+      var gy = yOfCents(c);
+      contourCtx.beginPath(); contourCtx.moveTo(0, gy); contourCtx.lineTo(w, gy); contourCtx.stroke();
+    }
+    contourCtx.strokeStyle = "#ffffff0c";
+    for (var gx = 0; gx < w; gx += PX_PER_SEC) {
+      contourCtx.beginPath(); contourCtx.moveTo(gx, top); contourCtx.lineTo(gx, top + bandH); contourCtx.stroke();
+    }
+
+    // each committed-note run drawn as its own continuous stroke + label
+    contourCtx.lineWidth = 2;
+    contourCtx.strokeStyle = "#f2ead9";
+    contourCtx.font = "600 12px 'JetBrains Mono', monospace";
+    var allSegs = curSegment ? segments.concat([curSegment]) : segments;
+    for (var s = 0; s < allSegs.length; s++) {
+      var seg = allSegs[s];
+      if (seg.points.length < 1) continue;
+      var x0 = xOf(seg.points[0].ms);
+      var x1 = xOf(seg.points[seg.points.length - 1].ms);
+      if (x1 < -20 || x0 > w + 20) continue;
+      contourCtx.beginPath();
+      for (var p = 0; p < seg.points.length; p++) {
+        var px = xOf(seg.points[p].ms), py = yOfCents(seg.points[p].cents);
+        if (p === 0) contourCtx.moveTo(px, py); else contourCtx.lineTo(px, py);
+      }
+      contourCtx.stroke();
+      contourCtx.fillStyle = "#f2ead9";
+      contourCtx.fillText(noteLabel(seg.midi), Math.max(2, x0 + 3), Math.max(12, yOfCents(seg.points[0].cents) - 7));
+    }
+
+    if (!soundActive && segments.length === 0 && !curSegment) {
+      contourCtx.fillStyle = "#a89a8099";
+      contourCtx.font = "500 11px 'JetBrains Mono', monospace";
+      contourCtx.fillText("listening…", 6, h - 8);
+    }
+  }
+
+  // ---------- auto-follow scrolling ----------
+  scopeScroll.addEventListener("scroll", function () {
+    if (performance.now() - lastProgScrollAt < 60) return;
+    followMode = false;
+    liveBtn.hidden = false;
+  });
+  liveBtn.addEventListener("click", function () {
+    followMode = true;
+    liveBtn.hidden = true;
+  });
+  function followScroll() {
+    if (!followMode) return;
+    lastProgScrollAt = performance.now();
+    scopeScroll.scrollLeft = scopeScroll.scrollWidth - scopeScroll.clientWidth;
   }
 
   // ---------- metronome / rhythm ----------
   var bpm = 90, metroOn = false, metroTimer = null, nextBeatTime = 0;
-  var beatCount = 0, beatSubdiv = 4; // dots shown per bar (visual only)
+  var beatCount = 0, beatSubdiv = 4;
 
   function renderBeatDots() {
     beatDots.innerHTML = "";
-    for (var i = 0; i < beatSubdiv; i++) {
-      var d = document.createElement("i");
-      beatDots.appendChild(d);
-    }
+    for (var i = 0; i < beatSubdiv; i++) beatDots.appendChild(document.createElement("i"));
   }
   renderBeatDots();
 
@@ -585,8 +903,7 @@
     osc.start(); osc.stop(audioCtx.currentTime + 0.05);
   }
 
-  var lastOnsetBeatDelta = null;
-
+  var expectedBeatTimes = [];
   function metroTick() {
     if (!metroOn) return;
     clickSound();
@@ -604,14 +921,8 @@
     var delay = Math.max(0, nextBeatTime - performance.now());
     metroTimer = setTimeout(metroTick, delay);
   }
-
-  var expectedBeatTimes = [];
-
   function startMetro() {
-    metroOn = true;
-    beatCount = 0;
-    nextBeatTime = performance.now();
-    metroTick();
+    metroOn = true; beatCount = 0; nextBeatTime = performance.now(); metroTick();
   }
   function stopMetro() {
     metroOn = false;
@@ -619,7 +930,6 @@
     var dots = beatDots.children;
     for (var i = 0; i < dots.length; i++) dots[i].classList.remove("hit");
   }
-
   metroBtn.addEventListener("click", function () {
     bpmRow.hidden = !bpmRow.hidden;
     if (bpmRow.hidden) { stopMetro(); metroBtn.classList.remove("on"); }
@@ -641,8 +951,8 @@
     }
   });
 
-  // ---------- A/B loop (practice a section repeatedly against the beat) ----------
-  var abOn = false, aPct = 0.1, bPct = 0.5, loopActive = false;
+  // ---------- A/B loop ----------
+  var aPct = 0.1, bPct = 0.5, loopActive = false;
   abBtn.addEventListener("click", function () {
     abRow.hidden = !abRow.hidden;
     abBtn.classList.toggle("on", !abRow.hidden);
@@ -652,7 +962,6 @@
     abRegion.style.width = ((bPct - aPct) * 100) + "%";
   }
   setA.addEventListener("click", function () {
-    aPct = Math.max(0, Math.min(bPct - 0.05, aPct));
     aPct = currentPlayheadPct();
     if (aPct >= bPct) bPct = Math.min(1, aPct + 0.1);
     renderAB();
@@ -668,8 +977,6 @@
   });
   renderAB();
 
-  // the playhead sweeps once per 2 loop-lengths as a simple visual metronome-independent
-  // time reference the player can use to mark A and B while practicing freely.
   var playheadStart = performance.now(), playheadPeriodMs = 8000;
   function currentPlayheadPct() {
     var el = (performance.now() - playheadStart) % playheadPeriodMs;
@@ -686,24 +993,42 @@
   }
   tickPlayhead();
 
+  // ---------- onset detection -> staff notes ----------
+  var lastRms = 0, onsetCooldown = 0;
+  function registerOnset(nowMs) {
+    if (committedMidi === null) return;
+    var hit = null;
+    if (metroOn && expectedBeatTimes.length) {
+      var best = Infinity;
+      for (var i = 0; i < expectedBeatTimes.length; i++) {
+        var d = Math.abs(expectedBeatTimes[i] - performance.now());
+        if (d < best) best = d;
+      }
+      var tolerance = Math.min(140, (60000 / bpm) * 0.22);
+      hit = best <= tolerance;
+    }
+    var intervalMs = lastOnsetMs < 0 ? beatMs() : (nowMs - lastOnsetMs);
+    var durBeats = quantizeDuration(intervalMs);
+    lastOnsetMs = nowMs;
+
+    staffNotes.push({ ms: nowMs, midi: committedMidi, cents: Math.round(committedCentsEMA), hit: hit, durBeats: durBeats });
+    if (staffNotes.length > 2000) staffNotes.shift();
+  }
+
   // ---------- main loop ----------
-  var startTime = null;
   function loop(ts) {
     if (!running) return;
-    if (startTime === null) startTime = ts;
     analyser.getFloatTimeDomainData(buf);
     var freq = autoCorrelate(buf, audioCtx.sampleRate);
-    updatePitchUI(freq);
 
-    // rms for onset + "is anyone making sound" detection
     var rms = 0;
     for (var i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
     rms = Math.sqrt(rms / buf.length);
     var now = performance.now();
+
     var onsetThresh = Math.max(0.025, NOISE_FLOOR * 6);
     if (rms > onsetThresh && lastRms <= onsetThresh && now - onsetCooldown > 150) {
       onsetCooldown = now;
-      registerOnset(now);
     }
     lastRms = rms;
 
@@ -711,65 +1036,53 @@
     var wasActive = soundActive;
     soundActive = (now - lastSoundAt) < SILENCE_HOLD_MS;
 
-    if (soundActive && !wasActive) {
-      // sound just started: reset the window and begin sweeping from the left edge
-      windowStart = now;
-      trace = [];
-      labels = [];
-      beatMarks = [];
-      lastLabelKey = null;
-      lastLabelX = -999;
+    if (lastFrameNow === null) lastFrameNow = now;
+    var dt = now - lastFrameNow;
+    lastFrameNow = now;
+    if (soundActive) activeMs += dt;
+
+    if (!soundActive && wasActive) {
+      resetCommitted();
+      if (curSegment) { segments.push(curSegment); curSegment = null; }
+      lastOnsetMs = -1;
     }
 
     if (soundActive) {
-      var elapsed = now - windowStart;
-      var tNorm = (elapsed / (TRACE_SECONDS * 1000));
-      if (tNorm >= 1) {
-        windowStart = now;
-        trace = [];
-        labels = [];
-        beatMarks = [];
-        lastLabelKey = null;
-        lastLabelX = -999;
-        tNorm = 0;
-      }
-      frozenT = tNorm;
-      if (freq > 0) {
-        var n = freqToNote(freq);
-        trace.push({ t: tNorm, cents: n.cents });
-        if (trace.length > 600) trace.shift();
-        var key = n.name + n.octave;
-        var x = tNorm * scopeW;
-        if (key !== lastLabelKey && (x - lastLabelX) > 28) {
-          labels.push({ t: tNorm, cents: n.cents, text: key });
-          if (labels.length > 40) labels.shift();
-          lastLabelKey = key;
-          lastLabelX = x;
-        } else if (key !== lastLabelKey) {
-          lastLabelKey = key; // note changed but too close to label again yet
-        }
-      }
-    }
-    // when not active, trace/labels/beatMarks simply stop receiving new points (frozen display)
+      feedPitch(freq, now);
+      updatePitchUI();
 
-    drawScope(buf);
+      if (committedMidi !== null) {
+        if (!curSegment || curSegment.midi !== committedMidi) {
+          if (curSegment) segments.push(curSegment);
+          curSegment = { midi: committedMidi, points: [] };
+        }
+        curSegment.points.push({ ms: activeMs, cents: committedCentsEMA });
+        if (curSegment.points.length > 400) curSegment.points.shift();
+      }
+
+      if (now === onsetCooldown) registerOnset(activeMs);
+
+      windowStart = Math.max(0, activeMs - MAX_SECONDS * 1000);
+      // prune history older than the rolling window
+      var cutoff = windowStart - 2000;
+      while (segments.length && segments[0].points.length && segments[0].points[segments[0].points.length - 1].ms < cutoff) segments.shift();
+      while (staffNotes.length && staffNotes[0].ms < cutoff) staffNotes.shift();
+
+      resizeCanvasesToWidth(Math.max(scopeScroll.clientWidth, usedWidthPx()));
+    } else {
+      updatePitchUI();
+    }
+
+    drawContour();
+    drawStaff();
+    followScroll();
+
     requestAnimationFrame(loop);
   }
 
-  function registerOnset(now) {
-    if (!metroOn || expectedBeatTimes.length === 0) return;
-    var nearest = null, best = Infinity;
-    for (var i = 0; i < expectedBeatTimes.length; i++) {
-      var d = Math.abs(expectedBeatTimes[i] - now);
-      if (d < best) { best = d; nearest = expectedBeatTimes[i]; }
-    }
-    var tolerance = Math.min(140, (60000 / bpm) * 0.22);
-    var hit = best <= tolerance;
-    if (!soundActive) return;
-    var tNorm = Math.max(0, Math.min(1, (now - windowStart) / (TRACE_SECONDS * 1000)));
-    beatMarks.push({ t: tNorm, hit: hit });
-    if (beatMarks.length > 80) beatMarks.shift();
-  }
+  fitScopes();
+  drawContour();
+  drawStaff();
 
 })();
 </script>
