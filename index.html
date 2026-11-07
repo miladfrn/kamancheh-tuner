@@ -125,9 +125,7 @@
   button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
-  #postStart #stopBtn, #postStart #pauseBtn { flex: 0 0 auto; }
-  #refindBtn { flex: 0 0 auto; padding: 8px 10px; }
-  #liveNote { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
+  #liveNote { flex: 0 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
   #liveNoteName { font-weight: 600; font-size: 32px; transition: color 120ms ease; flex: 0 0 auto; }
   #liveNoteName sup { font-size: 0.48em; vertical-align: 55%; }
   #liveNoteName sub { font-size: 0.48em; vertical-align: -15%; }
@@ -269,9 +267,6 @@
         </div>
       </div>
       <div id="postStart" hidden>
-        <button id="refindBtn" class="startBtn" title="Re-find tempo">
-          <span class="l1">⟳</span><span class="l2">tempo</span>
-        </button>
         <div id="liveNote">
           <span id="liveNoteName">–</span>
           <span id="liveNoteCents">0¢</span>
@@ -390,7 +385,7 @@
   var beatUp = $("beatUp"), beatDown = $("beatDown"), beatNum = $("beatNum");
   var startManual = $("startManual"), startManualLabel = $("startManualLabel");
   var startAuto = $("startAuto"), startAutoLabel = $("startAutoLabel"), startAutoLabel2 = $("startAutoLabel2");
-  var stopBtn = $("stopBtn"), pauseBtn = $("pauseBtn"), pauseLabel = $("pauseLabel"), refindBtn = $("refindBtn");
+  var stopBtn = $("stopBtn"), pauseBtn = $("pauseBtn"), pauseLabel = $("pauseLabel");
   var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents"), liveNoteFreq = $("liveNoteFreq");
 
   var tabStaff = $("tabStaff"), tabContour = $("tabContour");
@@ -886,7 +881,6 @@
     if (!micRunning) { requestMic(); pendingAfterMic = startAutoFind; }
     else startAutoFind();
   });
-  refindBtn.addEventListener("click", function () { startAutoFind(); });
 
   function pulseBeatNum() {
     beatNum.classList.add("pulse");
