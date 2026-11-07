@@ -54,22 +54,20 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: max(8px, env(safe-area-inset-top, 0px)) 16px 6px;
+    flex-wrap: nowrap;
+    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 8px;
     gap: 8px;
     flex: 0 0 auto;
   }
-  #brand { display: flex; align-items: center; gap: 8px; }
-  #logo { width: 48px; height: auto; display: block; flex: 0 0 auto; }
-  header h1 { font-size: 26px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
-  header .right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
   .headerPill {
-    font-size: 11px; color: var(--fg-dim); background: var(--panel);
-    border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px;
-    display: flex; align-items: center; gap: 7px;
+    font-size: 15px; color: var(--fg-dim); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px 9px 16px;
+    display: flex; align-items: center; gap: 10px;
+    flex: 1 1 0; justify-content: center; min-width: 0;
   }
   #a4 input {
-    width: 34px; background: transparent; border: none; color: var(--fg);
-    font-family: 'JetBrains Mono', monospace; font-size: 12px; text-align: right;
+    width: 48px; background: transparent; border: none; color: var(--fg);
+    font-family: 'JetBrains Mono', monospace; font-size: 17px; text-align: right;
     letter-spacing: 0.02em; padding: 0;
     -moz-appearance: textfield;
   }
@@ -77,17 +75,25 @@
   #a4 input::-webkit-outer-spin-button,
   #a4 input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   #beatHeader #beatNum {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700;
     color: var(--fg); border-radius: 4px; padding: 0 2px;
     transition: background 150ms ease, color 150ms ease;
   }
   #beatHeader #beatNum.pulse { background: var(--accent); color: #1c1200; }
-  .bpmLabel { font-size: 10px; color: var(--fg-dim); }
+  .bpmLabel { font-size: 13px; color: var(--fg-dim); }
   .stepBtn {
-    width: 19px; height: 19px; border-radius: 50%; padding: 0;
+    width: 44px; height: 34px; border-radius: 999px; padding: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; background: transparent; border: 1px solid var(--line);
-    color: var(--fg-dim); flex: 0 0 auto;
+    font-size: 18px; background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--fg); flex: 0 0 auto;
+  }
+  @media (max-width: 480px) {
+    header { gap: 6px; padding-left: 10px; padding-right: 10px; }
+    .headerPill { font-size: 12px; padding: 6px 7px 6px 9px; gap: 5px; }
+    #a4 input { width: 32px; font-size: 13px; }
+    #beatHeader #beatNum { font-size: 13px; }
+    .bpmLabel { font-size: 10px; }
+    .stepBtn { width: 27px; height: 25px; font-size: 13px; }
   }
 
   #main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 16px; gap: 6px; }
@@ -95,19 +101,17 @@
   /* ---- slim control bar: Record/Pause/Stop on top, live note readout below ---- */
   #controlBar {
     flex: 0 0 auto;
-    align-self: flex-start;
-    width: fit-content;
-    max-width: 100%;
     background: var(--panel-2);
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 6px 10px;
     display: flex;
-    flex-direction: column;
-    gap: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
   }
-  #actionRow { display: flex; }
-  #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  #actionRow { display: flex; flex: 0 0 auto; }
+  #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 162px; }
   button.startBtn {
     flex: 1 1 0;
     min-width: 0;
@@ -120,7 +124,7 @@
   button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
-  #liveNote { min-width: 0; display: flex; align-items: flex-start; gap: 10px; overflow: hidden; }
+  #liveNote { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; }
   #liveNoteName { font-weight: 600; font-size: 38px; line-height: 1; transition: color 120ms ease; flex: 0 0 auto; }
   #liveNoteName sup { font-size: 0.48em; vertical-align: 55%; }
   #liveNoteName sub { font-size: 0.48em; vertical-align: -15%; }
@@ -234,29 +238,30 @@
 <div id="app">
 
   <header>
-    <div id="brand">
-      <img id="logo" src="logo.png" alt="">
-      <h1>Tuner</h1>
+    <div id="a4" class="headerPill">
+      <span>A4</span>
+      <input id="a4input" type="number" value="440" step="1" inputmode="numeric">
+      <button id="a4down" class="stepBtn">−</button>
+      <button id="a4up" class="stepBtn">+</button>
     </div>
-    <div class="right">
-      <div id="a4" class="headerPill">
-        <span>A4</span>
-        <input id="a4input" type="number" value="440" step="1" inputmode="numeric">
-        <button id="a4down" class="stepBtn">−</button>
-        <button id="a4up" class="stepBtn">+</button>
-      </div>
-      <div id="beatHeader" class="headerPill">
-        <span>Beat</span>
-        <span id="beatNum" class="mono">60</span>
-        <span class="bpmLabel">bpm</span>
-        <button id="beatDown" class="stepBtn">−</button>
-        <button id="beatUp" class="stepBtn">+</button>
-      </div>
+    <div id="beatHeader" class="headerPill">
+      <span>Beat</span>
+      <span id="beatNum" class="mono">60</span>
+      <span class="bpmLabel">bpm</span>
+      <button id="beatDown" class="stepBtn">−</button>
+      <button id="beatUp" class="stepBtn">+</button>
     </div>
   </header>
 
   <div id="main">
     <div id="controlBar">
+      <div id="liveNote">
+        <span id="liveNoteName">–</span>
+        <div id="liveNoteStack">
+          <span id="liveNoteCents">0¢</span>
+          <span id="liveNoteFreq">0Hz</span>
+        </div>
+      </div>
       <div id="actionRow">
         <div id="preStart">
           <button id="startManual" class="primary startBtn">
@@ -273,13 +278,6 @@
           <button id="stopBtn" class="primary startBtn">
             <span class="l1">Stop</span><span class="l2">mic</span>
           </button>
-        </div>
-      </div>
-      <div id="liveNote">
-        <span id="liveNoteName">–</span>
-        <div id="liveNoteStack">
-          <span id="liveNoteCents">0¢</span>
-          <span id="liveNoteFreq">0Hz</span>
         </div>
       </div>
     </div>
@@ -445,8 +443,8 @@
     scopeGutterNums.hidden = activeTab !== "contour";
     scopeGutterNotes.hidden = activeTab !== "staff";
     pitchScaleToggle.hidden = activeTab !== "staff";
-    if (activeTab === "staff") renderGutterNotes();
     fitScopes();
+    if (activeTab === "staff") renderGutterNotes();
     if (activeTab === "staff") drawStaff(); else drawContour();
     drawTimeAxis();
   }
@@ -669,11 +667,10 @@
   // ---------- staff geometry (compact, fixed spacing; 2 ledger-guide lines each side) ----------
   function staffLayout() {
     var halfSpacing = 13;
-    // Pinned near the top (not centered): on a tall phone panel, centering
-    // left the staff floating mid-screen surrounded by empty space, making
-    // the ledger lines easy to miss. bottomY is a fixed distance from the
-    // panel's top edge, independent of panelH.
-    var topMargin = 28;
+    // Ledger-guide range runs from step -6 (bottom) to step 14 (top), a fixed
+    // content height; center that block in the panel so top/bottom margins match.
+    var contentHeight = 20 * halfSpacing;
+    var topMargin = Math.max(12, (panelH - contentHeight) / 2);
     var bottomY = topMargin + 14 * halfSpacing; // clears the top ledger line (step 14)
     return { halfSpacing: halfSpacing, bottomY: bottomY };
   }
@@ -694,10 +691,12 @@
     return 12 * (octave + 1) + LETTER_SEMITONE[letter];
   }
   var PX_PER_SEMITONE = 8;
-  var PITCH_TOP_MARGIN = 28;
   var PITCH_REF_MIDI = stepToMidi(14); // E6, top ledger position
+  var PITCH_BOTTOM_MIDI = stepToMidi(-6); // bottom ledger position
   function pitchScaleY(midiFloat) {
-    return PITCH_TOP_MARGIN + (PITCH_REF_MIDI - midiFloat) * PX_PER_SEMITONE;
+    var contentHeight = (PITCH_REF_MIDI - PITCH_BOTTOM_MIDI) * PX_PER_SEMITONE;
+    var topMargin = Math.max(12, (panelH - contentHeight) / 2);
+    return topMargin + (PITCH_REF_MIDI - midiFloat) * PX_PER_SEMITONE;
   }
   function renderGutterNotes() {
     scopeGutterNotes.innerHTML = "";
