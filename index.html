@@ -59,8 +59,8 @@
     flex: 0 0 auto;
   }
   #brand { display: flex; align-items: center; gap: 8px; }
-  #logo { width: 34px; height: auto; display: block; flex: 0 0 auto; }
-  header h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+  #logo { width: 48px; height: auto; display: block; flex: 0 0 auto; }
+  header h1 { font-size: 26px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
   header .right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
   .headerPill {
     font-size: 11px; color: var(--fg-dim); background: var(--panel);
@@ -92,7 +92,7 @@
 
   #main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 16px; gap: 6px; }
 
-  /* ---- slim control bar: live note readout + Record/Pause/Stop ---- */
+  /* ---- slim control bar: Record/Pause/Stop on top, live note readout below ---- */
   #controlBar {
     flex: 0 0 auto;
     background: var(--panel-2);
@@ -100,10 +100,11 @@
     border-radius: 12px;
     padding: 8px 10px;
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
   }
-  #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 216px; }
+  #actionRow { display: flex; justify-content: flex-end; }
+  #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 162px; }
   button.startBtn {
     flex: 1 1 0;
     min-width: 0;
@@ -116,7 +117,7 @@
   button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
-  #liveNote { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; }
+  #liveNote { width: 100%; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; }
   #liveNoteName { font-weight: 600; font-size: 32px; transition: color 120ms ease; flex: 0 0 auto; }
   #liveNoteName sup { font-size: 0.48em; vertical-align: 55%; }
   #liveNoteName sub { font-size: 0.48em; vertical-align: -15%; }
@@ -248,28 +249,30 @@
 
   <div id="main">
     <div id="controlBar">
+      <div id="actionRow">
+        <div id="preStart">
+          <button id="startManual" class="primary startBtn">
+            <span class="l1">Record</span><span class="l2" id="startManualLabel">@ 60 bpm</span>
+          </button>
+          <button id="startAuto" class="startBtn">
+            <span class="l1">Record</span><span class="l2">auto tempo</span>
+          </button>
+        </div>
+        <div id="postStart" hidden>
+          <button id="pauseBtn" class="startBtn">
+            <span class="l1" id="pauseLabel">Pause</span><span class="l2">rec</span>
+          </button>
+          <button id="stopBtn" class="primary startBtn">
+            <span class="l1">Stop</span><span class="l2">mic</span>
+          </button>
+        </div>
+      </div>
       <div id="liveNote">
         <span id="liveNoteName">–</span>
         <div id="liveNoteStack">
           <span id="liveNoteCents">0¢</span>
           <span id="liveNoteFreq">0Hz</span>
         </div>
-      </div>
-      <div id="preStart">
-        <button id="startManual" class="primary startBtn">
-          <span class="l1">Record</span><span class="l2" id="startManualLabel">@ 60 bpm</span>
-        </button>
-        <button id="startAuto" class="startBtn">
-          <span class="l1">Record</span><span class="l2">auto tempo</span>
-        </button>
-      </div>
-      <div id="postStart" hidden>
-        <button id="pauseBtn" class="startBtn">
-          <span class="l1" id="pauseLabel">Pause</span><span class="l2">rec</span>
-        </button>
-        <button id="stopBtn" class="primary startBtn">
-          <span class="l1">Stop</span><span class="l2">mic</span>
-        </button>
       </div>
     </div>
 
@@ -484,6 +487,12 @@
       statusEl.hidden = true;
       setStatus("Microphone ready.");
       fitScopes();
+      // the panel's measured height can be briefly stale right after the
+      // status overlay is hidden (seen on mobile Safari especially), which
+      // left the lower ledger lines positioned off-panel on first load —
+      // re-measure once layout has actually settled.
+      requestAnimationFrame(function () { requestAnimationFrame(function () { fitScopes(); }); });
+      setTimeout(fitScopes, 300);
       requestAnimationFrame(loop);
       if (pendingAfterMic) { var fn = pendingAfterMic; pendingAfterMic = null; fn(); }
     }).catch(function (err) {
