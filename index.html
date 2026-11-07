@@ -11,16 +11,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   /*
-    Layout: two stacked, horizontally scrollable panels on a shared rolling
-    4-minute timeline — a SoundCorset-style cents/pitch contour on top, a
-    compact real 5-line staff (noteheads with duration symbols + ledger
-    lines) below. The panels fill nearly the whole screen in both
-    orientations; the current note/cents reading floats as a small badge
-    in the top-right corner instead of taking a dedicated block.
-    Color: warm dark wood/strings palette. Contour and staff notation are
-    deliberately single-color (neutral) — there is no expected score to
-    compare against, so only rhythm (on/off the beat) gets the red/white
-    judgement, and only on the staff noteheads.
+    Layout: a slim control bar up top (tempo + start/stop + current note),
+    a 2-way tab switcher, then one full-height scrollable panel at a time:
+    a continuous scatter of dots on a 5-line staff (replacing guessed note
+    durations — every frame plots exactly where the pitch fell), or a
+    SoundCorset-style +-40 cent contour. Both share one rolling 4-minute
+    timeline. No colored judgement anywhere yet — there is no reference
+    score to grade against, so everything is single-color until one
+    exists.
+    Color: warm dark wood/strings palette.
     Type: Spectral (display, serif) + JetBrains Mono (numbers).
   */
   :root {
@@ -31,8 +30,6 @@
     --fg: #f2ead9;
     --fg-dim: #a89a80;
     --accent: #c98a3a;
-    --good: #e8e0cc;
-    --bad: #d6553f;
     --string: #7a9b7e;
     color-scheme: dark;
   }
@@ -60,11 +57,7 @@
     transform: rotate(90deg) translateY(-100%);
   }
 
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
+  #app { display: flex; flex-direction: column; height: 100%; }
 
   header {
     display: flex;
@@ -74,203 +67,106 @@
     gap: 8px;
     flex: 0 0 auto;
   }
-  header h1 {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
-    letter-spacing: 0.01em;
-  }
+  header h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
   header h1 span { color: var(--accent); }
   header .right { display: flex; align-items: center; gap: 6px; }
   #a4 {
-    font-size: 11px;
-    color: var(--fg-dim);
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 4px 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-size: 11px; color: var(--fg-dim); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px;
+    display: flex; align-items: center; gap: 6px;
   }
   #a4 input {
-    width: 44px;
-    background: transparent;
-    border: none;
-    color: var(--fg);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    text-align: right;
+    width: 44px; background: transparent; border: none; color: var(--fg);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right;
   }
   #a4 input:focus { outline: none; }
   #rotateToggle {
-    width: 30px; height: 30px; border-radius: 999px;
+    width: 28px; height: 28px; border-radius: 999px;
     display: flex; align-items: center; justify-content: center;
     background: var(--panel); border: 1px solid var(--line); color: var(--fg-dim);
-    font-size: 14px; padding: 0;
+    font-size: 13px; padding: 0;
   }
 
-  #main {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 0 16px 8px;
-  }
+  #main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 16px 8px; gap: 6px; }
 
-  /* ---- two scrollable timeline panels ---- */
-  #scopeOuter {
-    flex: 1 1 auto;
-    min-height: 0;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: row;
-  }
-  #scopeGutter {
-    flex: 0 0 28px;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--line);
-  }
-  #centsAxis {
-    flex: 0 0 58%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 4px 0;
-    font-size: 9px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--fg-dim);
-    text-align: center;
-  }
-  #centsAxis span:nth-child(5) { color: var(--string); font-weight: 700; }
-  #staffGutterLabel {
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--fg-dim);
-  }
-  #scopeScroll {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
-  }
-  #scopeInner {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  #contourCanvas { flex: 0 0 58%; display: block; }
-  #staffCanvas { flex: 1 1 auto; display: block; border-top: 1px solid var(--line); }
-
-  /* ---- floating overlays on the scope panel ---- */
-  #noteBadge {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    z-index: 3;
-    background: #1c1813dd;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 4px 12px 6px;
-    text-align: center;
-    pointer-events: none;
-  }
-  #noteBadge #noteName {
-    font-size: 26px;
-    font-weight: 600;
-    line-height: 1.1;
-    transition: color 120ms ease;
-    display: block;
-  }
-  #noteBadge .centsRow {
-    font-size: 11px;
-    color: var(--fg-dim);
-    font-family: 'JetBrains Mono', monospace;
-  }
-  #noteBadge #centsVal { color: var(--fg); font-weight: 700; }
-
-  #scopeLegend {
-    position: absolute;
-    top: 58px;
-    right: 10px;
-    z-index: 3;
-    font-size: 9px;
-    color: var(--fg-dim);
-    display: flex;
-    gap: 7px;
-    pointer-events: none;
-    background: #1c1813cc;
-    padding: 2px 6px;
-    border-radius: 6px;
-  }
-  #scopeLegend span { display: flex; align-items: center; gap: 3px; }
-  #scopeLegend i { width: 6px; height: 6px; border-radius: 2px; display: inline-block; }
-
-  #zoomControls {
-    position: absolute;
-    top: 8px;
-    left: 38px;
-    z-index: 3;
-    display: flex;
-    gap: 4px;
-  }
-  #zoomControls button {
-    width: 26px; height: 26px; padding: 0;
-    justify-content: center;
-    font-size: 13px;
-    background: #1c1813dd;
-  }
-
-  #liveBtn {
-    position: absolute;
-    right: 10px;
-    bottom: 8px;
-    z-index: 3;
-    font-size: 10px;
-    padding: 6px 10px;
-  }
-
-  /* ---- transport strip ---- */
-  #transport {
+  /* ---- slim control bar ---- */
+  #controlBar {
     flex: 0 0 auto;
     background: var(--panel-2);
-    border-top: 1px solid var(--line);
-    padding: 10px 16px max(10px, env(safe-area-inset-bottom, 0px));
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px 10px;
   }
-  .row { display: flex; align-items: center; gap: 10px; }
-  .row.wrap { flex-wrap: wrap; }
+  #preStart { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #postStart { display: flex; align-items: center; gap: 10px; }
+
+  #beatAdjust { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  #beatArrows { display: flex; flex-direction: column; gap: 2px; }
+  #beatArrows button { padding: 3px 9px; font-size: 11px; }
+  #beatNum {
+    font-size: 24px; font-weight: 700; width: 3ch; text-align: center;
+    border-radius: 6px; transition: background 150ms ease, color 150ms ease;
+  }
+  #beatNum.pulse { background: var(--accent); color: #1c1200; }
+  .bpmLabel { font-size: 10px; color: var(--fg-dim); }
+
+  #startButtons { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+  button.startBtn {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+    text-align: center;
+    padding: 8px 6px;
+    line-height: 1.25;
+  }
+  button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
+  button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
+
+  #postStart #stopBtn { flex: 0 0 auto; }
+  #refindBtn { flex: 0 0 auto; width: 38px; justify-content: center; padding: 9px; }
+  #liveNote { flex: 1 1 auto; min-width: 0; font-size: 15px; display: flex; align-items: baseline; gap: 8px; }
+  #liveNoteName { font-weight: 600; font-size: 20px; transition: color 120ms ease; }
+  #liveNoteCents { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--fg-dim); }
+
+  /* ---- tab switcher ---- */
+  #tabBar { flex: 0 0 auto; display: flex; gap: 6px; }
+  #tabBar button { flex: 1 1 0; justify-content: center; font-size: 11.5px; }
+  #tabBar button.on { background: var(--accent); border-color: var(--accent); color: #1c1200; font-weight: 700; }
+
+  /* ---- scope panel ---- */
+  #scopeOuter {
+    flex: 1 1 auto; min-height: 0;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: row;
+  }
+  #scopeGutter {
+    flex: 0 0 28px; display: flex; flex-direction: column;
+    justify-content: space-between; padding: 4px 0;
+    font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--fg-dim);
+    text-align: center; border-right: 1px solid var(--line);
+  }
+  #scopeGutter span:nth-child(5) { color: var(--string); font-weight: 700; }
+  #scopeScroll {
+    flex: 1 1 auto; min-width: 0;
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; touch-action: pan-x;
+  }
+  #scopeInner { height: 100%; position: relative; }
+  #contourCanvas, #staffCanvas { position: absolute; top: 0; left: 0; height: 100%; display: block; }
+
+  #zoomControls { position: absolute; top: 8px; left: 10px; z-index: 3; display: flex; gap: 4px; }
+  #zoomControls button { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 13px; background: #1c1813dd; }
+
+  #liveBtn { position: absolute; right: 10px; bottom: 8px; z-index: 3; font-size: 10px; padding: 6px 10px; }
 
   button {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    border: 1px solid var(--line);
-    background: var(--panel);
-    color: var(--fg);
-    border-radius: 10px;
-    padding: 9px 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    -webkit-user-select: none;
-    user-select: none;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+    border-radius: 10px; padding: 9px 12px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    -webkit-user-select: none; user-select: none;
   }
   button:active { transform: scale(0.97); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #1c1200; font-weight: 700; }
@@ -279,45 +175,17 @@
   button.icon { padding: 9px; width: 38px; justify-content: center; flex: 0 0 auto; }
   button.ghost { background: transparent; }
 
-  #bpmBlock { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
-  #bpmNum { font-size: 22px; font-weight: 700; width: 3.2ch; text-align: center; flex: 0 0 auto; }
-  #bpmStepper { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
-  #bpmStepper button { padding: 2px 8px; font-size: 10px; }
-  #beatDots { display: flex; gap: 5px; flex: 1 1 auto; min-width: 0; overflow: hidden; }
-  #beatDots i {
-    width: 9px; height: 9px; border-radius: 50%;
-    background: var(--line);
-    flex: 0 0 auto;
-    transition: background 60ms ease, transform 60ms ease;
-  }
-  #beatDots i.hit { background: var(--accent); transform: scale(1.35); }
-  #autoLockDot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--line);
-    flex: 0 0 auto;
-    transition: background 150ms ease;
-  }
-  #autoLockDot.locked { background: var(--string); }
-
   .hint { font-size: 10.5px; color: var(--fg-dim); }
 
   #status {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    text-align: center;
-    padding: 0 32px;
-    z-index: 50;
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 0 32px; z-index: 50;
   }
   #status h2 { font-size: 20px; margin: 0; }
   #status p { color: var(--fg-dim); font-size: 14px; max-width: 46ch; margin: 0; }
   #rotateChoice { display: flex; flex-direction: column; gap: 8px; align-items: center; }
-  #rotateChoice .row { gap: 8px; }
+  #rotateChoice .row { display: flex; gap: 8px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -333,56 +201,55 @@
   </header>
 
   <div id="main">
-    <div id="scopeOuter">
-      <div id="scopeGutter">
-        <div id="centsAxis">
-          <span>40</span><span>30</span><span>20</span><span>10</span><span>0</span><span>-10</span><span>-20</span><span>-30</span><span>-40</span>
+    <div id="controlBar">
+      <div id="preStart">
+        <div id="beatAdjust">
+          <div id="beatArrows">
+            <button id="beatUp">▲</button>
+            <button id="beatDown">▼</button>
+          </div>
+          <span id="beatNum" class="mono">90</span>
+          <span class="bpmLabel">bpm</span>
         </div>
-        <div id="staffGutterLabel">staff</div>
+        <div id="startButtons">
+          <button id="startManual" class="primary startBtn">
+            <span class="l1">Start</span><span class="l2" id="startManualLabel">@ 90 bpm</span>
+          </button>
+          <button id="startAuto" class="startBtn">
+            <span class="l1" id="startAutoLabel">Start</span><span class="l2" id="startAutoLabel2">auto tempo</span>
+          </button>
+        </div>
+      </div>
+      <div id="postStart" hidden>
+        <button id="stopBtn" class="icon" title="Stop">■</button>
+        <button id="refindBtn" title="Re-find tempo">⟳</button>
+        <div id="liveNote">
+          <span id="liveNoteName">–</span>
+          <span id="liveNoteCents">0¢</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabBar">
+      <button id="tabStaff" class="on">Staff</button>
+      <button id="tabContour">Contour</button>
+    </div>
+
+    <div id="scopeOuter">
+      <div id="scopeGutter" hidden>
+        <span>40</span><span>30</span><span>20</span><span>10</span><span>0</span><span>-10</span><span>-20</span><span>-30</span><span>-40</span>
       </div>
       <div id="scopeScroll">
         <div id="scopeInner">
-          <canvas id="contourCanvas"></canvas>
           <canvas id="staffCanvas"></canvas>
+          <canvas id="contourCanvas" hidden></canvas>
         </div>
       </div>
-
       <div id="zoomControls">
         <button id="zoomOut" class="icon" title="Zoom out">−</button>
         <button id="zoomIn" class="icon" title="Zoom in">+</button>
       </div>
-      <div id="noteBadge">
-        <span id="noteName">–</span>
-        <span class="centsRow"><span id="centsVal">0</span>¢</span>
-      </div>
-      <div id="scopeLegend">
-        <span><i style="background:var(--good)"></i>on beat</span>
-        <span><i style="background:var(--bad)"></i>off beat</span>
-      </div>
       <button id="liveBtn" class="ghost" hidden>● live</button>
-    </div>
-  </div>
-
-  <div id="transport">
-    <div class="row">
-      <button id="micBtn" class="primary">● Start mic</button>
-      <button id="metroBtn" class="icon" title="Metronome click">♩</button>
-      <span class="hint" id="hintText">Tap Start mic to begin tuning.</span>
-    </div>
-
-    <div class="row" id="bpmRow">
-      <div id="bpmBlock">
-        <div id="bpmStepper">
-          <button id="bpmUp">▲</button>
-          <button id="bpmDown">▼</button>
-        </div>
-        <span id="bpmNum" class="mono">90</span>
-        <span class="hint">bpm</span>
-        <i id="autoLockDot" title="auto-detected from a steady rhythm"></i>
-        <div id="beatDots" hidden></div>
-      </div>
-      <button id="tapTempo">Tap</button>
-      <button id="resetBeat" title="Forget the detected tempo and relock">Reset</button>
     </div>
   </div>
 
@@ -415,9 +282,7 @@
 
   function pc(midi) { return ((midi % 12) + 12) % 12; }
   function midiOctave(midi) { return Math.floor(midi / 12) - 1; }
-  function noteLabel(midi) {
-    return NOTE_NAMES[pc(midi)] + midiOctave(midi);
-  }
+  function noteLabel(midi) { return NOTE_NAMES[pc(midi)] + midiOctave(midi); }
   function diatonicStep(midi) {
     var letter = LETTER_BY_PC[pc(midi)];
     return DIATONIC_INDEX[letter] + 7 * midiOctave(midi);
@@ -457,23 +322,42 @@
   var $ = function (id) { return document.getElementById(id); };
   var statusEl = $("status"), statusMsg = $("statusMsg"), statusBtn = $("statusBtn");
   var rotateChoice = $("rotateChoice"), rotateYes = $("rotateYes"), rotateNo = $("rotateNo"), rotateToggle = $("rotateToggle");
-  var micBtn = $("micBtn"), hintText = $("hintText");
-  var noteName = $("noteName"), centsVal = $("centsVal");
-  var noteBadge = $("noteBadge");
+  var hintEl = null;
+  var a4input = $("a4input");
+
+  var preStart = $("preStart"), postStart = $("postStart");
+  var beatUp = $("beatUp"), beatDown = $("beatDown"), beatNum = $("beatNum");
+  var startManual = $("startManual"), startManualLabel = $("startManualLabel");
+  var startAuto = $("startAuto"), startAutoLabel = $("startAutoLabel"), startAutoLabel2 = $("startAutoLabel2");
+  var stopBtn = $("stopBtn"), refindBtn = $("refindBtn");
+  var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents");
+
+  var tabStaff = $("tabStaff"), tabContour = $("tabContour");
+  var scopeGutter = $("scopeGutter");
   var contourCanvas = $("contourCanvas"), contourCtx = contourCanvas.getContext("2d");
   var staffCanvas = $("staffCanvas"), staffCtx = staffCanvas.getContext("2d");
   var scopeScroll = $("scopeScroll"), scopeInner = $("scopeInner"), liveBtn = $("liveBtn");
   var zoomIn = $("zoomIn"), zoomOut = $("zoomOut");
-  var a4input = $("a4input");
-
-  var metroBtn = $("metroBtn"), bpmNum = $("bpmNum");
-  var bpmUp = $("bpmUp"), bpmDown = $("bpmDown"), tapTempo = $("tapTempo"), resetBeat = $("resetBeat");
-  var beatDots = $("beatDots"), autoLockDot = $("autoLockDot");
 
   a4input.addEventListener("change", function () {
     var v = parseFloat(a4input.value);
     if (v && v > 300 && v < 600) a4 = v;
   });
+
+  // ---------- tabs ----------
+  var activeTab = "staff";
+  function setTab(t) {
+    activeTab = t;
+    tabStaff.classList.toggle("on", t === "staff");
+    tabContour.classList.toggle("on", t === "contour");
+    staffCanvas.hidden = t !== "staff";
+    contourCanvas.hidden = t !== "contour";
+    scopeGutter.hidden = t !== "contour";
+    fitScopes();
+    if (t === "staff") drawStaff(); else drawContour();
+  }
+  tabStaff.addEventListener("click", function () { setTab("staff"); });
+  tabContour.addEventListener("click", function () { setTab("contour"); });
 
   // ---------- mobile / rotate ----------
   function isMobile() {
@@ -488,15 +372,15 @@
     rotateToggle.hidden = false;
     setTimeout(fitScopes, 60);
   }
-  rotateYes.addEventListener("click", function () { setRotated(true); startMic(); });
-  rotateNo.addEventListener("click", function () { startMic(); });
+  rotateYes.addEventListener("click", function () { setRotated(true); requestMic(); });
+  rotateNo.addEventListener("click", function () { requestMic(); });
   rotateToggle.addEventListener("click", function () {
     setRotated(!document.documentElement.classList.contains("force-landscape"));
   });
 
   // ---------- audio graph ----------
   var audioCtx = null, analyser = null, sourceNode = null, gainNode = null, buf = null;
-  var running = false;
+  var micRunning = false;
   var inputGain = 6; // boosts quiet sources (singing, far mic) so detection still triggers
 
   function initStatusGate() {
@@ -513,7 +397,10 @@
   }
   initStatusGate();
 
-  function startMic() {
+  // requestMic(): just grants mic access and starts live pitch detection.
+  // It does NOT start a recorded session — that happens via the Start
+  // buttons in the control bar (startManual / startAuto).
+  function requestMic() {
     navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     }).then(function (stream) {
@@ -526,32 +413,46 @@
       gainNode.gain.value = inputGain;
       sourceNode.connect(gainNode);
       gainNode.connect(analyser);
-      running = true;
+      micRunning = true;
       statusEl.hidden = true;
-      micBtn.textContent = "■ Stop mic";
-      micBtn.classList.add("on");
-      hintText.textContent = "Listening…";
       fitScopes();
       requestAnimationFrame(loop);
+      if (pendingAfterMic) { var fn = pendingAfterMic; pendingAfterMic = null; fn(); }
     }).catch(function (err) {
       statusMsg.textContent = "Microphone permission was denied or unavailable (" + err.message + "). Allow mic access in your browser's site settings and reload.";
       rotateChoice.hidden = true;
       statusBtn.hidden = false;
     });
   }
+  statusBtn.addEventListener("click", requestMic);
 
-  function stopMic() {
-    running = false;
-    if (audioCtx) audioCtx.close();
-    micBtn.textContent = "● Start mic";
-    micBtn.classList.remove("on");
-    hintText.textContent = "Tap Start mic to begin tuning.";
-    noteName.textContent = "–";
-    centsVal.textContent = "0";
+  function resetSessionData() {
+    segments = []; curSegment = null;
+    scatterPoints = [];
+    activeMs = 0; windowStart = 0; lastFrameNow = null;
+    lastDotPc = null; lastCanvasWidthPx = -1;
   }
 
-  micBtn.addEventListener("click", function () { running ? stopMic() : startMic(); });
-  statusBtn.addEventListener("click", startMic);
+  function beginSession() {
+    if (!sessionStarted) resetSessionData();
+    sessionStarted = true;
+    preStart.hidden = true;
+    postStart.hidden = false;
+  }
+  function endSession() {
+    sessionStarted = false;
+    autoFinding = false;
+    resetSessionData();
+    preStart.hidden = false;
+    postStart.hidden = true;
+    liveNoteName.textContent = "–";
+    liveNoteCents.textContent = "0¢";
+  }
+  stopBtn.addEventListener("click", function () {
+    if (audioCtx) audioCtx.close();
+    micRunning = false;
+    endSession();
+  });
 
   // ---------- committed-note smoothing (kills frame jitter + octave-error spikes) ----------
   var committedMidi = null, committedCentsEMA = 0;
@@ -562,7 +463,7 @@
     if (freq <= 0) return;
     var m = 69 + 12 * Math.log2(freq / a4);
     var rounded = Math.round(m);
-    if (rounded < MIDI_MIN || rounded > MIDI_MAX) return; // implausible: ignore this frame
+    if (rounded < MIDI_MIN || rounded > MIDI_MAX) return;
     var cents = (m - rounded) * 100;
 
     if (committedMidi === null) {
@@ -582,22 +483,20 @@
       candidateMidi = rounded; candidateSince = now;
     }
   }
-  function resetCommitted() {
-    committedMidi = null; committedCentsEMA = 0; candidateMidi = null;
-  }
+  function resetCommitted() { committedMidi = null; committedCentsEMA = 0; candidateMidi = null; }
 
-  function updatePitchUI() {
+  function updateLiveNoteUI() {
     if (committedMidi === null) {
-      noteName.textContent = "–";
-      noteName.style.color = "var(--fg-dim)";
-      centsVal.textContent = "0";
+      liveNoteName.textContent = "–";
+      liveNoteName.style.color = "var(--fg-dim)";
+      liveNoteCents.textContent = "0¢";
       return;
     }
     var c = Math.round(committedCentsEMA);
-    noteName.textContent = noteLabel(committedMidi);
-    centsVal.textContent = (c > 0 ? "+" : "") + c;
+    liveNoteName.textContent = noteLabel(committedMidi);
+    liveNoteCents.textContent = (c > 0 ? "+" : "") + c + "¢";
     var inTune = Math.abs(c) <= 8;
-    noteName.style.color = inTune ? "var(--string)" : (Math.abs(c) <= 20 ? "var(--fg)" : "var(--bad)");
+    liveNoteName.style.color = inTune ? "var(--string)" : (Math.abs(c) <= 20 ? "var(--fg)" : "var(--accent)");
   }
 
   // ---------- shared rolling timeline ----------
@@ -609,28 +508,26 @@
   var NOISE_FLOOR = 0.0035;
   var SILENCE_HOLD_MS = 550;
   var soundActive = false, lastSoundAt = 0;
-  var activeMs = 0, lastFrameNow = null; // activeMs only advances while sound is present
-  var windowStart = 0; // ms, left edge of the visible 4-min window
+  var activeMs = 0, lastFrameNow = null;
+  var windowStart = 0;
 
-  var segments = [];     // contour runs: {midi, points:[{ms,cents}]}
+  var segments = [];       // contour runs: {midi, points:[{ms,cents}]}
   var curSegment = null;
-  var staffNotes = [];   // {ms, midi, cents, hit, durBeats}
-  var lastOnsetMs = -1;
+  var scatterPoints = [];  // staff scatter: {ms, midi, acc}
+  var lastDotPc = null;
 
-  var contourH = 0, staffH = 0;
+  var sessionStarted = false;
+  var panelH = 0;
   var followMode = true, lastProgScrollAt = 0;
 
   function fitScopes() {
     var rect = scopeScroll.getBoundingClientRect();
-    contourH = contourCanvas.getBoundingClientRect().height || Math.round(rect.height * 0.58);
-    staffH = staffCanvas.getBoundingClientRect().height || Math.round(rect.height * 0.42);
+    panelH = rect.height;
     resizeCanvasesToWidth(Math.max(rect.width, usedWidthPx()));
   }
   window.addEventListener("resize", fitScopes);
 
-  function usedWidthPx() {
-    return Math.min(MAX_SECONDS, activeMs / 1000) * PX_PER_SEC;
-  }
+  function usedWidthPx() { return Math.min(MAX_SECONDS, activeMs / 1000) * PX_PER_SEC; }
 
   var lastCanvasWidthPx = -1;
   function resizeCanvasesToWidth(px) {
@@ -638,10 +535,10 @@
     if (Math.abs(px - lastCanvasWidthPx) < 4) return;
     lastCanvasWidthPx = px;
     scopeInner.style.width = px + "px";
-    [ [contourCanvas, contourCtx, contourH], [staffCanvas, staffCtx, staffH] ].forEach(function (t) {
-      var cv = t[0], ctx = t[1], h = t[2];
-      cv.width = px * dpr; cv.height = h * dpr;
-      cv.style.width = px + "px"; cv.style.height = h + "px";
+    [ [contourCanvas, contourCtx], [staffCanvas, staffCtx] ].forEach(function (t) {
+      var cv = t[0], ctx = t[1];
+      cv.width = px * dpr; cv.height = panelH * dpr;
+      cv.style.width = px + "px"; cv.style.height = panelH + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     });
   }
@@ -650,152 +547,79 @@
 
   function setZoom(px) {
     PX_PER_SEC = Math.max(PX_PER_SEC_MIN, Math.min(PX_PER_SEC_MAX, px));
-    lastCanvasWidthPx = -1; // force resize
+    lastCanvasWidthPx = -1;
     resizeCanvasesToWidth(Math.max(scopeScroll.clientWidth, usedWidthPx()));
   }
   zoomIn.addEventListener("click", function () { setZoom(PX_PER_SEC * 1.35); });
   zoomOut.addEventListener("click", function () { setZoom(PX_PER_SEC / 1.35); });
 
-  // ---------- staff geometry (compact, fixed spacing; room for 2 ledger lines each side) ----------
+  // ---------- staff geometry (compact, fixed spacing; 2 ledger-guide lines each side) ----------
   function staffLayout() {
     var halfSpacing = 8;
-    var spacing = halfSpacing * 2;
-    var reserveBelow = 4, reserveAbove = 4; // half-steps reserved for 2 ledger lines each side
-    var contentHalfSteps = 8 + reserveAbove + reserveBelow; // 5 lines span 8 half-steps
+    var reserveBelow = 4, reserveAbove = 4;
+    var contentHalfSteps = 8 + reserveAbove + reserveBelow;
     var contentHeight = contentHalfSteps * halfSpacing;
-    var topPad = Math.max(6, (staffH - contentHeight) / 2);
-    var bottomY = staffH - topPad - reserveBelow * halfSpacing;
-    return { spacing: spacing, halfSpacing: halfSpacing, bottomY: bottomY, pad: topPad };
+    var topPad = Math.max(6, (panelH - contentHeight) / 2);
+    var bottomY = panelH - topPad - reserveBelow * halfSpacing;
+    return { halfSpacing: halfSpacing, bottomY: bottomY };
   }
   function staffY(midi) {
     var g = staffLayout();
-    var step = diatonicStep(midi) - E4_STEP; // 0 = bottom line (E4) .. 8 = top line (F5)
+    var step = diatonicStep(midi) - E4_STEP;
     return g.bottomY - step * g.halfSpacing;
   }
 
-  function beatMs() { return 60000 / bpm; }
-  function quantizeDuration(intervalMs) {
-    var beats = intervalMs / beatMs();
-    var options = [4, 2, 1, 0.5, 0.25];
-    var best = 1, bestDist = Infinity;
-    for (var i = 0; i < options.length; i++) {
-      var d = Math.abs(Math.log(beats / options[i]));
-      if (d < bestDist) { bestDist = d; best = options[i]; }
-    }
-    return best;
-  }
-
-  function drawNoteSymbol(ctx, x, y, durBeats, color) {
-    var g = staffLayout();
-    var r = Math.max(3, g.halfSpacing * 0.62);
-    var stemUp = y > g.bottomY - 4 * g.halfSpacing; // below middle line -> stem up
-    var stemLen = g.spacing * 3.2;
-    var filled = durBeats <= 1;
-    var hasStem = durBeats <= 2;
-    var flags = durBeats === 0.5 ? 1 : (durBeats === 0.25 ? 2 : 0);
-
-    ctx.save();
-    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.3;
-
-    ctx.beginPath();
-    ctx.ellipse(x, y, r, r * 0.74, -0.35, 0, Math.PI * 2);
-    if (filled) ctx.fill(); else { ctx.lineWidth = 1.5; ctx.stroke(); }
-
-    if (hasStem) {
-      var stemX = stemUp ? x + r - 1 : x - r + 1;
-      var tipY = stemUp ? y - stemLen : y + stemLen;
-      ctx.beginPath();
-      ctx.moveTo(stemX, y);
-      ctx.lineTo(stemX, tipY);
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      for (var f = 0; f < flags; f++) {
-        var fy = tipY + (stemUp ? f * 5 : -f * 5);
-        ctx.beginPath();
-        if (stemUp) {
-          ctx.moveTo(stemX, fy);
-          ctx.quadraticCurveTo(stemX + 7, fy + 4, stemX + 1.5, fy + 11);
-        } else {
-          ctx.moveTo(stemX, fy);
-          ctx.quadraticCurveTo(stemX - 7, fy - 4, stemX - 1.5, fy - 11);
-        }
-        ctx.lineWidth = 1.4;
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-  }
-
-  function drawLedgerLines(ctx, x, midi, color) {
-    var g = staffLayout();
-    var step = diatonicStep(midi) - E4_STEP;
-    var r = Math.max(5, g.halfSpacing * 1.15);
-    ctx.save();
-    ctx.strokeStyle = color; ctx.lineWidth = 1.1; ctx.globalAlpha = 0.85;
-    if (step < 0) {
-      for (var s = -2; s >= step - (step % 2 === 0 ? 0 : 1); s -= 2) {
-        if (s > 0) continue;
-        var y = g.bottomY - s * g.halfSpacing;
-        ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.stroke();
-      }
-    } else if (step > 8) {
-      for (var s2 = 10; s2 <= step + (step % 2 === 0 ? 0 : 1); s2 += 2) {
-        var y2 = g.bottomY - s2 * g.halfSpacing;
-        ctx.beginPath(); ctx.moveTo(x - r, y2); ctx.lineTo(x + r, y2); ctx.stroke();
-      }
-    }
-    ctx.restore();
-  }
-
   function drawStaff() {
-    staffCtx.clearRect(0, 0, lastCanvasWidthPx, staffH);
+    var w = lastCanvasWidthPx, h = panelH;
+    staffCtx.clearRect(0, 0, w, h);
     var g = staffLayout();
-    var w = lastCanvasWidthPx;
 
+    // 2 faint ledger-guide lines each side, always visible
+    staffCtx.strokeStyle = "#f2ead933";
+    staffCtx.setLineDash([3, 4]);
+    staffCtx.lineWidth = 1;
+    [ -4, -2, 10, 12 ].forEach(function (step) {
+      var y = g.bottomY - step * g.halfSpacing;
+      staffCtx.beginPath(); staffCtx.moveTo(0, y); staffCtx.lineTo(w, y); staffCtx.stroke();
+    });
+    staffCtx.setLineDash([]);
+
+    // 5 staff lines
     staffCtx.strokeStyle = "#f2ead966";
     staffCtx.lineWidth = 1;
     for (var i = 0; i < 5; i++) {
-      var y = g.bottomY - i * 2 * g.halfSpacing;
-      staffCtx.beginPath(); staffCtx.moveTo(0, y); staffCtx.lineTo(w, y); staffCtx.stroke();
+      var y2 = g.bottomY - i * 2 * g.halfSpacing;
+      staffCtx.beginPath(); staffCtx.moveTo(0, y2); staffCtx.lineTo(w, y2); staffCtx.stroke();
     }
 
-    for (var n = 0; n < staffNotes.length; n++) {
-      var note = staffNotes[n];
-      var x = xOf(note.ms);
-      if (x < -20 || x > w + 20) continue;
-      var y = staffY(note.midi);
-      var color = note.hit === true ? "#e8e0cc" : (note.hit === false ? "#d6553f" : "#c98a3a");
-
-      drawLedgerLines(staffCtx, x, note.midi, "#f2ead988");
-      if (SHARP_BY_PC[pc(note.midi)]) {
+    // continuous scatter of dots — exactly where each heard sound fell
+    staffCtx.fillStyle = "#f2ead9";
+    for (var n = 0; n < scatterPoints.length; n++) {
+      var p = scatterPoints[n];
+      var x = xOf(p.ms);
+      if (x < -6 || x > w + 6) continue;
+      var y = staffY(p.midi);
+      staffCtx.beginPath();
+      staffCtx.arc(x, y, 2.1, 0, Math.PI * 2);
+      staffCtx.fill();
+      if (p.acc) {
         staffCtx.save();
-        staffCtx.fillStyle = color;
         staffCtx.font = "600 10px 'JetBrains Mono', monospace";
-        staffCtx.fillText("#", x - g.halfSpacing * 1.9, y + 3.5);
+        staffCtx.fillText("#", x - 9, y + 3.5);
         staffCtx.restore();
       }
-      drawNoteSymbol(staffCtx, x, y, note.durBeats, color);
-
-      staffCtx.save();
-      staffCtx.fillStyle = "#a89a80";
-      staffCtx.font = "500 8.5px 'JetBrains Mono', monospace";
-      staffCtx.textAlign = "center";
-      var cTxt = (note.cents > 0 ? "+" : "") + note.cents;
-      staffCtx.fillText(cTxt, x, g.bottomY + g.halfSpacing * 4 + 14);
-      staffCtx.restore();
     }
 
-    if (!soundActive && staffNotes.length === 0) {
+    if (!soundActive && scatterPoints.length === 0) {
       staffCtx.fillStyle = "#a89a8099";
       staffCtx.font = "500 11px 'JetBrains Mono', monospace";
-      staffCtx.fillText("notes appear here as you play", 8, staffH / 2 + 4);
+      staffCtx.fillText(sessionStarted ? "notes appear here as you play" : "tap a Start button below to begin", 8, h / 2 + 4);
     }
   }
 
   // ---------- contour panel (SoundCorset-style) ----------
   function drawContour() {
-    var w = lastCanvasWidthPx, h = contourH;
+    var w = lastCanvasWidthPx, h = panelH;
     contourCtx.clearRect(0, 0, w, h);
 
     var top = 4, bandH = h - 8;
@@ -838,141 +662,86 @@
     if (!soundActive && segments.length === 0 && !curSegment) {
       contourCtx.fillStyle = "#a89a8099";
       contourCtx.font = "500 11px 'JetBrains Mono', monospace";
-      contourCtx.fillText("listening…", 6, h - 8);
+      contourCtx.fillText(sessionStarted ? "listening…" : "tap a Start button below to begin", 6, h - 8);
     }
   }
 
-  // ---------- auto-follow scrolling (leaves room beside the note badge) ----------
+  // ---------- auto-follow scrolling ----------
   scopeScroll.addEventListener("scroll", function () {
     if (performance.now() - lastProgScrollAt < 60) return;
     followMode = false;
     liveBtn.hidden = false;
   });
-  liveBtn.addEventListener("click", function () {
-    followMode = true;
-    liveBtn.hidden = true;
-  });
+  liveBtn.addEventListener("click", function () { followMode = true; liveBtn.hidden = true; });
   function followScroll() {
     if (!followMode) return;
     lastProgScrollAt = performance.now();
-    var reserve = noteBadge.getBoundingClientRect().width + 20;
-    var visible = Math.max(80, scopeScroll.clientWidth - reserve);
-    var target = lastCanvasWidthPx - visible;
-    scopeScroll.scrollLeft = Math.max(0, Math.min(target, scopeScroll.scrollWidth - scopeScroll.clientWidth));
+    scopeScroll.scrollLeft = scopeScroll.scrollWidth - scopeScroll.clientWidth;
   }
 
-  // ---------- rhythm: metronome click + auto tempo detection ----------
-  var bpm = 90, metroOn = false, metroTimer = null, nextBeatTime = 0;
-  var beatCount = 0, beatSubdiv = 4;
-
-  function setBpm(v) {
+  // ---------- tempo: manual dial + explicit auto-find ----------
+  var bpm = 90;
+  function setBpmDisplay(v) {
     bpm = Math.max(30, Math.min(260, Math.round(v)));
-    bpmNum.textContent = bpm;
+    beatNum.textContent = bpm;
+    startManualLabel.textContent = "@ " + bpm + " bpm";
   }
-  setBpm(90);
+  setBpmDisplay(90);
 
-  function clickSound() {
-    if (!audioCtx) return;
-    var osc = audioCtx.createOscillator();
-    var g = audioCtx.createGain();
-    osc.frequency.value = (beatCount % beatSubdiv === 0) ? 1500 : 1000;
-    g.gain.setValueAtTime(0.18, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-    osc.connect(g); g.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-  }
+  beatUp.addEventListener("click", function () { setBpmDisplay(bpm + 2); });
+  beatDown.addEventListener("click", function () { setBpmDisplay(bpm - 2); });
 
-  var expectedBeatTimes = [];
-  function metroTick() {
-    if (!metroOn) return;
-    clickSound();
-    expectedBeatTimes.push(performance.now());
-    if (expectedBeatTimes.length > 40) expectedBeatTimes.shift();
-    beatCount++;
-    var interval = 60000 / bpm;
-    nextBeatTime += interval;
-    var delay = Math.max(0, nextBeatTime - performance.now());
-    metroTimer = setTimeout(metroTick, delay);
-  }
-  function startMetro() {
-    metroOn = true; beatCount = 0; nextBeatTime = performance.now(); metroTick();
-  }
-  function stopMetro() {
-    metroOn = false;
-    if (metroTimer) clearTimeout(metroTimer);
-  }
-  metroBtn.addEventListener("click", function () {
-    if (metroOn) { stopMetro(); metroBtn.classList.remove("on"); }
-    else { startMetro(); metroBtn.classList.add("on"); }
-  });
-  bpmUp.addEventListener("click", function () { setBpm(bpm + 2); recentOnsetReal = []; });
-  bpmDown.addEventListener("click", function () { setBpm(bpm - 2); recentOnsetReal = []; });
-
-  var tapTimes = [];
-  tapTempo.addEventListener("click", function () {
-    var now = performance.now();
-    tapTimes.push(now);
-    tapTimes = tapTimes.filter(function (t) { return now - t < 3000; });
-    if (tapTimes.length > 1) {
-      var intervals = [];
-      for (var i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
-      var avg = intervals.reduce(function (a, b) { return a + b; }, 0) / intervals.length;
-      setBpm(60000 / avg);
-      recentOnsetReal = [];
-    }
+  startManual.addEventListener("click", function () {
+    autoFinding = false;
+    if (!micRunning) { requestMic(); pendingAfterMic = function () { beginSession(); }; }
+    else beginSession();
   });
 
-  // Auto tempo detection: watches your actual playing for a steady pulse and
-  // updates the beat number live, so you don't have to set tempo by hand.
-  var recentOnsetReal = [];
-  resetBeat.addEventListener("click", function () {
+  var pendingAfterMic = null;
+  var autoFinding = false, findDeadline = 0, recentOnsetReal = [];
+
+  function startAutoFind() {
     recentOnsetReal = [];
-    autoLockDot.classList.remove("locked");
+    autoFinding = true;
+    findDeadline = performance.now() + 5000;
+  }
+  startAuto.addEventListener("click", function () {
+    if (!micRunning) { requestMic(); pendingAfterMic = startAutoFind; }
+    else startAutoFind();
   });
-  function trackAutoTempo(nowReal) {
+  refindBtn.addEventListener("click", function () { startAutoFind(); });
+
+  function pulseBeatNum() {
+    beatNum.classList.add("pulse");
+    clearTimeout(pulseBeatNum._t);
+    pulseBeatNum._t = setTimeout(function () { beatNum.classList.remove("pulse"); }, 250);
+  }
+
+  function trackAutoTempoOnset(nowReal) {
     recentOnsetReal.push(nowReal);
     if (recentOnsetReal.length > 6) recentOnsetReal.shift();
-    if (recentOnsetReal.length < 4) { autoLockDot.classList.remove("locked"); return; }
+    if (recentOnsetReal.length < 4) return;
     var ivs = [];
     for (var i = 1; i < recentOnsetReal.length; i++) ivs.push(recentOnsetReal[i] - recentOnsetReal[i - 1]);
     var mean = ivs.reduce(function (a, b) { return a + b; }, 0) / ivs.length;
     var variance = ivs.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / ivs.length;
     var sd = Math.sqrt(variance);
     if (mean > 180 && mean < 2200 && sd / mean < 0.12) {
-      setBpm(60000 / mean);
-      autoLockDot.classList.add("locked");
-    } else {
-      autoLockDot.classList.remove("locked");
-    }
-  }
-
-  // ---------- onset detection -> staff notes ----------
-  var lastRms = 0, onsetCooldown = 0;
-  function registerOnset(nowMs) {
-    var nowReal = performance.now();
-    trackAutoTempo(nowReal);
-    if (committedMidi === null) return;
-    var hit = null;
-    if (metroOn && expectedBeatTimes.length) {
-      var best = Infinity;
-      for (var i = 0; i < expectedBeatTimes.length; i++) {
-        var d = Math.abs(expectedBeatTimes[i] - nowReal);
-        if (d < best) best = d;
+      setBpmDisplay(60000 / mean);
+      pulseBeatNum();
+      if (autoFinding) {
+        autoFinding = false;
+        if (!sessionStarted) beginSession();
       }
-      var tolerance = Math.min(140, (60000 / bpm) * 0.22);
-      hit = best <= tolerance;
     }
-    var intervalMs = lastOnsetMs < 0 ? beatMs() : (nowMs - lastOnsetMs);
-    var durBeats = quantizeDuration(intervalMs);
-    lastOnsetMs = nowMs;
-
-    staffNotes.push({ ms: nowMs, midi: committedMidi, cents: Math.round(committedCentsEMA), hit: hit, durBeats: durBeats });
-    if (staffNotes.length > 2000) staffNotes.shift();
   }
+
+  // ---------- onset detection (feeds auto-tempo only) ----------
+  var lastRms = 0, onsetCooldown = 0;
 
   // ---------- main loop ----------
   function loop(ts) {
-    if (!running) return;
+    if (!micRunning) return;
     analyser.getFloatTimeDomainData(buf);
     var freq = autoCorrelate(buf, audioCtx.sampleRate);
 
@@ -990,51 +759,57 @@
     var wasActive = soundActive;
     soundActive = (now - lastSoundAt) < SILENCE_HOLD_MS;
 
-    if (lastFrameNow === null) lastFrameNow = now;
-    var dt = now - lastFrameNow;
-    lastFrameNow = now;
-    if (soundActive) activeMs += dt;
+    feedPitch(freq, now);
+    updateLiveNoteUI();
+
+    if (onsetNow && autoFinding) trackAutoTempoOnset(now);
+    if (autoFinding && now > findDeadline) {
+      autoFinding = false;
+      if (!sessionStarted) beginSession(); // give up: start anyway with last known bpm
+    }
 
     if (!soundActive && wasActive) {
       resetCommitted();
       if (curSegment) { segments.push(curSegment); curSegment = null; }
-      lastOnsetMs = -1;
+      lastDotPc = null;
     }
 
-    if (soundActive) {
-      feedPitch(freq, now);
-      updatePitchUI();
+    if (sessionStarted) {
+      if (lastFrameNow === null) lastFrameNow = now;
+      var dt = now - lastFrameNow;
+      lastFrameNow = now;
+      if (soundActive) activeMs += dt;
 
-      if (committedMidi !== null) {
+      if (soundActive && committedMidi !== null) {
         if (!curSegment || curSegment.midi !== committedMidi) {
           if (curSegment) segments.push(curSegment);
           curSegment = { midi: committedMidi, points: [] };
         }
         curSegment.points.push({ ms: activeMs, cents: committedCentsEMA });
         if (curSegment.points.length > 400) curSegment.points.shift();
-      }
 
-      if (onsetNow) registerOnset(activeMs);
+        var curPc = pc(committedMidi);
+        var acc = false;
+        if (curPc !== lastDotPc) { acc = SHARP_BY_PC[curPc]; lastDotPc = curPc; }
+        scatterPoints.push({ ms: activeMs, midi: committedMidi, acc: acc });
+        if (scatterPoints.length > 20000) scatterPoints.shift();
+      }
 
       windowStart = Math.max(0, activeMs - MAX_SECONDS * 1000);
       var cutoff = windowStart - 2000;
       while (segments.length && segments[0].points.length && segments[0].points[segments[0].points.length - 1].ms < cutoff) segments.shift();
-      while (staffNotes.length && staffNotes[0].ms < cutoff) staffNotes.shift();
+      while (scatterPoints.length && scatterPoints[0].ms < cutoff) scatterPoints.shift();
 
       resizeCanvasesToWidth(Math.max(scopeScroll.clientWidth, usedWidthPx()));
-    } else {
-      updatePitchUI();
     }
 
-    drawContour();
-    drawStaff();
+    if (activeTab === "staff") drawStaff(); else drawContour();
     followScroll();
 
     requestAnimationFrame(loop);
   }
 
   fitScopes();
-  drawContour();
   drawStaff();
 
 })();
