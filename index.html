@@ -172,6 +172,11 @@
     justify-content: space-between; padding: 4px 0;
   }
   #scopeGutterNums span:nth-child(5) { color: var(--string); font-weight: 700; }
+  #scopeGutterNotes { flex: 1 1 auto; position: relative; }
+  .gutterNoteLabel {
+    position: absolute; left: 0; right: 0; text-align: center;
+    transform: translateY(-50%); line-height: 1;
+  }
   #scopeGutterSpacer { flex: 0 0 18px; border-top: 1px solid var(--line); }
   #scopeScroll {
     flex: 1 1 auto; min-width: 0;
@@ -194,7 +199,11 @@
     position: absolute; top: 8px; right: 10px; z-index: 3;
     font-size: 9.5px; padding: 6px 10px;
   }
-  #liveBtn:not(.on), #rollToggle:not(.on) { background: #1c1813dd; }
+  #pitchScaleToggle {
+    position: absolute; top: 40px; right: 10px; z-index: 3;
+    font-size: 9.5px; padding: 6px 10px;
+  }
+  #liveBtn:not(.on), #rollToggle:not(.on), #pitchScaleToggle:not(.on) { background: #1c1813dd; }
 
   button {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
@@ -284,6 +293,7 @@
         <div id="scopeGutterNums">
           <span>40</span><span>30</span><span>20</span><span>10</span><span>0</span><span>-10</span><span>-20</span><span>-30</span><span>-40</span>
         </div>
+        <div id="scopeGutterNotes" hidden></div>
         <div id="scopeGutterSpacer"></div>
       </div>
       <div id="scopeScroll">
@@ -300,6 +310,7 @@
         <button id="zoomIn" class="icon" title="Zoom in">+</button>
       </div>
       <button id="rollToggle" title="How the timeline moves through silence">Pause on silence</button>
+      <button id="pitchScaleToggle" title="Space staff lines by real pitch distance">Pitch-scaled lines</button>
       <button id="liveBtn" class="on">● following live</button>
     </div>
 
@@ -380,7 +391,7 @@
   var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents"), liveNoteFreq = $("liveNoteFreq");
 
   var tabStaff = $("tabStaff"), tabContour = $("tabContour");
-  var scopeGutter = $("scopeGutter");
+  var scopeGutter = $("scopeGutter"), scopeGutterNums = $("scopeGutterNums"), scopeGutterNotes = $("scopeGutterNotes");
   var contourCanvas = $("contourCanvas"), contourCtx = contourCanvas.getContext("2d");
   var staffCanvas = $("staffCanvas"), staffCtx = staffCanvas.getContext("2d");
   var timeAxisCanvas = $("timeAxisCanvas"), timeAxisCtx = timeAxisCanvas.getContext("2d");
@@ -388,7 +399,7 @@
   var scopeScroll = $("scopeScroll"), scopeInner = $("scopeInner"), liveBtn = $("liveBtn");
   var zoomIn = $("zoomIn"), zoomOut = $("zoomOut"), zoomControls = $("zoomControls");
   var a4down = $("a4down"), a4up = $("a4up");
-  var rollToggle = $("rollToggle");
+  var rollToggle = $("rollToggle"), pitchScaleToggle = $("pitchScaleToggle");
 
   // Roll with time (default): the x-axis keeps moving at real speed even
   // through silence, so a rest between two notes shows as real empty space.
@@ -398,6 +409,17 @@
   rollToggle.addEventListener("click", function () {
     rollWithTime = !rollWithTime;
     rollToggle.classList.toggle("on", !rollWithTime); // fixed label; highlighted only while pause-on-silence is active
+  });
+
+  // Pitch-scaled lines (Staff tab only, off by default): redraws the staff
+  // with line spacing proportional to real semitone distance instead of
+  // equal diatonic spacing, and plots each dot at its true continuous
+  // pitch instead of snapping to the nearest note.
+  var pitchScaled = false;
+  pitchScaleToggle.addEventListener("click", function () {
+    pitchScaled = !pitchScaled;
+    pitchScaleToggle.classList.toggle("on", pitchScaled);
+    updateGutterAndOffsets();
   });
 
   function setA4(v) {
@@ -414,17 +436,25 @@
 
   // ---------- tabs ----------
   var activeTab = "staff";
+  function updateGutterAndOffsets() {
+    var showGutter = activeTab === "contour" || (activeTab === "staff" && pitchScaled);
+    scopeGutter.hidden = !showGutter;
+    scopeGutterNums.hidden = activeTab !== "contour";
+    scopeGutterNotes.hidden = !(activeTab === "staff" && pitchScaled);
+    zoomControls.style.left = (showGutter ? 39 : 10) + "px";
+    pitchScaleToggle.hidden = activeTab !== "staff";
+    if (activeTab === "staff" && pitchScaled) renderGutterNotes();
+    fitScopes();
+    if (activeTab === "staff") drawStaff(); else drawContour();
+    drawTimeAxis();
+  }
   function setTab(t) {
     activeTab = t;
     tabStaff.classList.toggle("on", t === "staff");
     tabContour.classList.toggle("on", t === "contour");
     staffCanvas.hidden = t !== "staff";
     contourCanvas.hidden = t !== "contour";
-    scopeGutter.hidden = t !== "contour";
-    zoomControls.style.left = (t === "contour" ? 39 : 10) + "px";
-    fitScopes();
-    if (t === "staff") drawStaff(); else drawContour();
-    drawTimeAxis();
+    updateGutterAndOffsets();
   }
   tabStaff.addEventListener("click", function () { setTab("staff"); });
   tabContour.addEventListener("click", function () { setTab("contour"); });
@@ -628,6 +658,34 @@
     return g.bottomY - step * g.halfSpacing;
   }
 
+  // ---------- pitch-scaled mode: line spacing proportional to real semitones ----------
+  var LETTER_ORDER = ["C", "D", "E", "F", "G", "A", "B"];
+  var LETTER_SEMITONE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  var LABELED_STEPS = [-6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14]; // every staff line + ledger position
+  function stepToMidi(step) {
+    var absIndex = step + E4_STEP;
+    var octave = Math.floor(absIndex / 7);
+    var letter = LETTER_ORDER[absIndex - octave * 7];
+    return 12 * (octave + 1) + LETTER_SEMITONE[letter];
+  }
+  var PX_PER_SEMITONE = 8;
+  var PITCH_TOP_MARGIN = 28;
+  var PITCH_REF_MIDI = stepToMidi(14); // E6, top ledger position
+  function pitchScaleY(midiFloat) {
+    return PITCH_TOP_MARGIN + (PITCH_REF_MIDI - midiFloat) * PX_PER_SEMITONE;
+  }
+  function renderGutterNotes() {
+    scopeGutterNotes.innerHTML = "";
+    LABELED_STEPS.forEach(function (step) {
+      var midi = stepToMidi(step);
+      var el = document.createElement("span");
+      el.className = "gutterNoteLabel";
+      el.style.top = pitchScaleY(midi) + "px";
+      el.textContent = noteLabel(midi);
+      scopeGutterNotes.appendChild(el);
+    });
+  }
+
   // vertical grid lines at every beat, per the current bpm (e.g. 60 bpm = 1 line/sec)
   function drawBeatGrid(ctx, w, y0, y1) {
     var bm = 60000 / bpm;
@@ -649,12 +707,17 @@
     var g = staffLayout();
     if (rollWithTime) drawBeatGrid(staffCtx, w, 0, h);
 
-    // 2 faint ledger-guide lines each side, always visible
+    // reference line y: equal diatonic spacing, or true semitone-proportional spacing
+    function lineY(step) {
+      return pitchScaled ? pitchScaleY(stepToMidi(step)) : (g.bottomY - step * g.halfSpacing);
+    }
+
+    // 3 faint ledger-guide lines each side, always visible
     staffCtx.strokeStyle = "#f2ead933";
     staffCtx.setLineDash([3, 4]);
     staffCtx.lineWidth = 1;
     [ -6, -4, -2, 10, 12, 14 ].forEach(function (step) {
-      var y = g.bottomY - step * g.halfSpacing;
+      var y = lineY(step);
       staffCtx.beginPath(); staffCtx.moveTo(0, y); staffCtx.lineTo(w, y); staffCtx.stroke();
     });
     staffCtx.setLineDash([]);
@@ -662,18 +725,18 @@
     // 5 staff lines
     staffCtx.strokeStyle = "#f2ead966";
     staffCtx.lineWidth = 1;
-    for (var i = 0; i < 5; i++) {
-      var y2 = g.bottomY - i * 2 * g.halfSpacing;
-      staffCtx.beginPath(); staffCtx.moveTo(0, y2); staffCtx.lineTo(w, y2); staffCtx.stroke();
-    }
+    [0, 2, 4, 6, 8].forEach(function (step) {
+      var y = lineY(step);
+      staffCtx.beginPath(); staffCtx.moveTo(0, y); staffCtx.lineTo(w, y); staffCtx.stroke();
+    });
 
-    // continuous scatter of dots — exactly where each heard sound fell
+    // dots: snapped to the nearest note's line, or plotted at true continuous pitch
     staffCtx.fillStyle = "#f2ead9";
     for (var n = 0; n < scatterPoints.length; n++) {
       var p = scatterPoints[n];
       var x = xOf(p.ms);
       if (x < -6 || x > w + 6) continue;
-      var y = staffY(p.midi);
+      var y = pitchScaled ? pitchScaleY(p.midi + p.cents / 100) : staffY(p.midi);
       staffCtx.beginPath();
       staffCtx.arc(x, y, 2.1, 0, Math.PI * 2);
       staffCtx.fill();
@@ -900,7 +963,7 @@
         var curPc = pc(committedMidi);
         var acc = false;
         if (curPc !== lastDotPc) { acc = SHARP_BY_PC[curPc]; lastDotPc = curPc; }
-        scatterPoints.push({ ms: activeMs, midi: committedMidi, acc: acc });
+        scatterPoints.push({ ms: activeMs, midi: committedMidi, cents: committedCentsEMA, acc: acc });
         if (scatterPoints.length > 20000) scatterPoints.shift();
       }
 
@@ -919,9 +982,7 @@
     requestAnimationFrame(loop);
   }
 
-  fitScopes();
-  drawStaff();
-  drawTimeAxis();
+  updateGutterAndOffsets();
 
 })();
 </script>
