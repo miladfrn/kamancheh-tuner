@@ -161,6 +161,11 @@
   #zoomControls button { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 13px; background: #1c1813dd; }
 
   #liveBtn { position: absolute; right: 10px; bottom: 8px; z-index: 3; font-size: 10px; padding: 6px 10px; }
+  #rollToggle {
+    position: absolute; top: 8px; right: 10px; z-index: 3;
+    font-size: 9.5px; padding: 6px 10px;
+  }
+  #rollToggle:not(.on) { background: #1c1813dd; }
 
   button {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
@@ -226,7 +231,7 @@
           <span id="liveNoteFreq">0Hz</span>
         </div>
         <button id="stopBtn" class="startBtn">
-          <span class="l1">■ Stop</span><span class="l2">mic</span>
+          <span class="l1">Stop</span><span class="l2">mic</span>
         </button>
       </div>
     </div>
@@ -250,6 +255,7 @@
         <button id="zoomOut" class="icon" title="Zoom out">−</button>
         <button id="zoomIn" class="icon" title="Zoom in">+</button>
       </div>
+      <button id="rollToggle" class="on" title="How the timeline moves through silence">Roll with time</button>
       <button id="liveBtn" class="ghost" hidden>● live</button>
     </div>
 
@@ -335,6 +341,18 @@
   var staffCanvas = $("staffCanvas"), staffCtx = staffCanvas.getContext("2d");
   var scopeScroll = $("scopeScroll"), scopeInner = $("scopeInner"), liveBtn = $("liveBtn");
   var zoomIn = $("zoomIn"), zoomOut = $("zoomOut");
+  var rollToggle = $("rollToggle");
+
+  // Roll with time (default): the x-axis keeps moving at real speed even
+  // through silence, so a rest between two notes shows as real empty space.
+  // Pause on silence: the axis only advances while sound is heard, so gaps
+  // between notes aren't visible on the timeline.
+  var rollWithTime = true;
+  rollToggle.addEventListener("click", function () {
+    rollWithTime = !rollWithTime;
+    rollToggle.classList.toggle("on", rollWithTime);
+    rollToggle.textContent = rollWithTime ? "Roll with time" : "Pause on silence";
+  });
 
   a4input.addEventListener("change", function () {
     var v = parseFloat(a4input.value);
@@ -590,12 +608,6 @@
         staffCtx.restore();
       }
     }
-
-    if (!soundActive && scatterPoints.length === 0) {
-      staffCtx.fillStyle = "#a89a8099";
-      staffCtx.font = "500 11px 'JetBrains Mono', monospace";
-      staffCtx.fillText(sessionStarted ? "notes appear here as you play" : "tap a Start button below to begin", 8, h / 2 + 4);
-    }
   }
 
   // ---------- contour panel (SoundCorset-style) ----------
@@ -640,11 +652,6 @@
       contourCtx.fillText(noteLabel(seg.midi), Math.max(2, x0 + 3), Math.max(12, yOfCents(seg.points[0].cents) - 7));
     }
 
-    if (!soundActive && segments.length === 0 && !curSegment) {
-      contourCtx.fillStyle = "#a89a8099";
-      contourCtx.font = "500 11px 'JetBrains Mono', monospace";
-      contourCtx.fillText(sessionStarted ? "listening…" : "tap a Start button below to begin", 6, h - 8);
-    }
   }
 
   // ---------- auto-follow scrolling ----------
@@ -769,7 +776,7 @@
       if (lastFrameNow === null) lastFrameNow = now;
       var dt = now - lastFrameNow;
       lastFrameNow = now;
-      if (soundActive) activeMs += dt;
+      if (rollWithTime || soundActive) activeMs += dt;
 
       if (soundActive && committedMidi !== null) {
         if (!curSegment || curSegment.midi !== committedMidi) {
