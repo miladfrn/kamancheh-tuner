@@ -217,6 +217,11 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 14px; text-align: center; padding: 0 32px; z-index: 50;
   }
+  #statusPortrait {
+    max-height: 34vh; width: auto; max-width: 70%;
+    border-radius: 10px; border: 1px solid var(--line);
+    box-shadow: 0 8px 28px #00000066;
+  }
   #status h2 { font-size: 20px; margin: 0; }
   #status p { color: var(--fg-dim); font-size: 14px; max-width: 46ch; margin: 0; }
   [hidden] { display: none !important; }
@@ -313,6 +318,7 @@
 </div>
 
 <div id="status">
+  <img id="statusPortrait" src="portrait.jpg" alt="">
   <h2>Microphone access needed</h2>
   <p id="statusMsg">This tuner listens to your kamancheh through the microphone to show pitch and rhythm in real time. Nothing is recorded or sent anywhere — it all stays on this device.</p>
   <button id="statusBtn" class="primary">Allow microphone</button>
