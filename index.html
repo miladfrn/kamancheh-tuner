@@ -62,14 +62,24 @@
   header .right { display: flex; align-items: center; gap: 6px; }
   #a4 {
     font-size: 11px; color: var(--fg-dim); background: var(--panel);
-    border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px;
-    display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px;
+    display: flex; align-items: center; gap: 7px;
   }
   #a4 input {
-    width: 44px; background: transparent; border: none; color: var(--fg);
-    font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right;
+    width: 34px; background: transparent; border: none; color: var(--fg);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; text-align: right;
+    letter-spacing: 0.02em; padding: 0;
+    -moz-appearance: textfield;
   }
   #a4 input:focus { outline: none; }
+  #a4 input::-webkit-outer-spin-button,
+  #a4 input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .a4step {
+    width: 19px; height: 19px; border-radius: 50%; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; background: transparent; border: 1px solid var(--line);
+    color: var(--fg-dim); flex: 0 0 auto;
+  }
 
   #main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 16px; gap: 6px; }
 
@@ -84,15 +94,23 @@
   #preStart { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   #postStart { display: flex; align-items: center; gap: 10px; }
 
-  #beatAdjust { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-  #beatArrows { display: flex; flex-direction: column; gap: 2px; }
-  #beatArrows button { padding: 3px 9px; font-size: 11px; }
+  #beatAdjust { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  #beatArrows { display: flex; flex-direction: row; gap: 4px; }
+  #beatArrows button {
+    width: 32px; height: 32px; padding: 0; font-size: 15px;
+    justify-content: center;
+  }
+  #beatNumWrap { position: relative; display: inline-block; padding-right: 22px; }
   #beatNum {
-    font-size: 24px; font-weight: 700; width: 3ch; text-align: center;
+    font-size: 30px; font-weight: 700; display: inline-block;
     border-radius: 6px; transition: background 150ms ease, color 150ms ease;
+    padding: 0 2px;
   }
   #beatNum.pulse { background: var(--accent); color: #1c1200; }
-  .bpmLabel { font-size: 10px; color: var(--fg-dim); }
+  .bpmLabel {
+    position: absolute; right: 0; bottom: 2px;
+    font-size: 9px; color: var(--fg-dim);
+  }
 
   #startButtons { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
   button.startBtn {
@@ -108,9 +126,11 @@
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
   #postStart #stopBtn { flex: 0 0 auto; }
-  #refindBtn { flex: 0 0 auto; width: 38px; justify-content: center; padding: 9px; }
+  #refindBtn { flex: 0 0 auto; padding: 8px 10px; }
   #liveNote { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
-  #liveNoteName { font-weight: 600; font-size: 20px; transition: color 120ms ease; flex: 0 0 auto; }
+  #liveNoteName { font-weight: 600; font-size: 32px; transition: color 120ms ease; flex: 0 0 auto; }
+  #liveNoteName sup { font-size: 0.48em; vertical-align: 55%; }
+  #liveNoteName sub { font-size: 0.48em; vertical-align: -15%; }
   #liveNoteCents {
     font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 19px;
     color: var(--fg); flex: 0 0 auto;
@@ -144,28 +164,37 @@
   }
   #scopeGutter {
     flex: 0 0 28px; display: flex; flex-direction: column;
-    justify-content: space-between; padding: 4px 0;
     font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--fg-dim);
     text-align: center; border-right: 1px solid var(--line);
   }
-  #scopeGutter span:nth-child(5) { color: var(--string); font-weight: 700; }
+  #scopeGutterNums {
+    flex: 1 1 auto; display: flex; flex-direction: column;
+    justify-content: space-between; padding: 4px 0;
+  }
+  #scopeGutterNums span:nth-child(5) { color: var(--string); font-weight: 700; }
+  #scopeGutterSpacer { flex: 0 0 18px; border-top: 1px solid var(--line); }
   #scopeScroll {
     flex: 1 1 auto; min-width: 0;
     overflow-x: auto; overflow-y: hidden;
     -webkit-overflow-scrolling: touch; touch-action: pan-x;
   }
-  #scopeInner { height: 100%; position: relative; }
+  #scopeInner { height: 100%; display: flex; flex-direction: column; }
+  #scopeCanvases { flex: 1 1 auto; min-height: 0; position: relative; }
   #contourCanvas, #staffCanvas { position: absolute; top: 0; left: 0; height: 100%; display: block; }
+  #timeAxisCanvas { flex: 0 0 18px; display: block; border-top: 1px solid var(--line); }
 
   #zoomControls { position: absolute; top: 8px; left: 10px; z-index: 3; display: flex; gap: 4px; }
   #zoomControls button { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 13px; background: #1c1813dd; }
 
-  #liveBtn { position: absolute; right: 10px; bottom: 8px; z-index: 3; font-size: 10px; padding: 6px 10px; }
+  #liveBtn {
+    position: absolute; right: 10px; bottom: 26px; z-index: 3;
+    font-size: 9.5px; padding: 6px 10px;
+  }
   #rollToggle {
     position: absolute; top: 8px; right: 10px; z-index: 3;
     font-size: 9.5px; padding: 6px 10px;
   }
-  #rollToggle:not(.on) { background: #1c1813dd; }
+  #liveBtn:not(.on), #rollToggle:not(.on) { background: #1c1813dd; }
 
   button {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
@@ -199,7 +228,12 @@
   <header>
     <h1>Kaman<span>cheh</span> Tuner</h1>
     <div class="right">
-      <label id="a4">A4<input id="a4input" type="number" value="440" step="1" inputmode="numeric"></label>
+      <div id="a4">
+        <span>A4</span>
+        <input id="a4input" type="number" value="440" step="1" inputmode="numeric">
+        <button id="a4down" class="a4step">−</button>
+        <button id="a4up" class="a4step">+</button>
+      </div>
     </div>
   </header>
 
@@ -208,15 +242,17 @@
       <div id="preStart">
         <div id="beatAdjust">
           <div id="beatArrows">
-            <button id="beatUp">▲</button>
             <button id="beatDown">▼</button>
+            <button id="beatUp">▲</button>
           </div>
-          <span id="beatNum" class="mono">90</span>
-          <span class="bpmLabel">bpm</span>
+          <div id="beatNumWrap">
+            <span id="beatNum" class="mono">60</span>
+            <span class="bpmLabel">bpm</span>
+          </div>
         </div>
         <div id="startButtons">
           <button id="startManual" class="primary startBtn">
-            <span class="l1">Start</span><span class="l2" id="startManualLabel">@ 90 bpm</span>
+            <span class="l1">Start</span><span class="l2" id="startManualLabel">@ 60 bpm</span>
           </button>
           <button id="startAuto" class="startBtn">
             <span class="l1" id="startAutoLabel">Start</span><span class="l2" id="startAutoLabel2">auto tempo</span>
@@ -224,13 +260,15 @@
         </div>
       </div>
       <div id="postStart" hidden>
-        <button id="refindBtn" title="Re-find tempo">⟳</button>
+        <button id="refindBtn" class="startBtn" title="Re-find tempo">
+          <span class="l1">⟳</span><span class="l2">tempo</span>
+        </button>
         <div id="liveNote">
           <span id="liveNoteName">–</span>
           <span id="liveNoteCents">0¢</span>
           <span id="liveNoteFreq">0Hz</span>
         </div>
-        <button id="stopBtn" class="startBtn">
+        <button id="stopBtn" class="primary startBtn">
           <span class="l1">Stop</span><span class="l2">mic</span>
         </button>
       </div>
@@ -243,20 +281,26 @@
 
     <div id="scopeOuter">
       <div id="scopeGutter" hidden>
-        <span>40</span><span>30</span><span>20</span><span>10</span><span>0</span><span>-10</span><span>-20</span><span>-30</span><span>-40</span>
+        <div id="scopeGutterNums">
+          <span>40</span><span>30</span><span>20</span><span>10</span><span>0</span><span>-10</span><span>-20</span><span>-30</span><span>-40</span>
+        </div>
+        <div id="scopeGutterSpacer"></div>
       </div>
       <div id="scopeScroll">
         <div id="scopeInner">
-          <canvas id="staffCanvas"></canvas>
-          <canvas id="contourCanvas" hidden></canvas>
+          <div id="scopeCanvases">
+            <canvas id="staffCanvas"></canvas>
+            <canvas id="contourCanvas" hidden></canvas>
+          </div>
+          <canvas id="timeAxisCanvas"></canvas>
         </div>
       </div>
       <div id="zoomControls">
         <button id="zoomOut" class="icon" title="Zoom out">−</button>
         <button id="zoomIn" class="icon" title="Zoom in">+</button>
       </div>
-      <button id="rollToggle" class="on" title="How the timeline moves through silence">Roll with time</button>
-      <button id="liveBtn" class="ghost" hidden>● live</button>
+      <button id="rollToggle" title="How the timeline moves through silence">Pause on silence</button>
+      <button id="liveBtn" class="on">● following live</button>
     </div>
 
     <div id="statusBar"><span id="statusBarText">Tap a Start button to begin.</span></div>
@@ -339,8 +383,11 @@
   var scopeGutter = $("scopeGutter");
   var contourCanvas = $("contourCanvas"), contourCtx = contourCanvas.getContext("2d");
   var staffCanvas = $("staffCanvas"), staffCtx = staffCanvas.getContext("2d");
+  var timeAxisCanvas = $("timeAxisCanvas"), timeAxisCtx = timeAxisCanvas.getContext("2d");
+  var scopeCanvases = $("scopeCanvases");
   var scopeScroll = $("scopeScroll"), scopeInner = $("scopeInner"), liveBtn = $("liveBtn");
-  var zoomIn = $("zoomIn"), zoomOut = $("zoomOut");
+  var zoomIn = $("zoomIn"), zoomOut = $("zoomOut"), zoomControls = $("zoomControls");
+  var a4down = $("a4down"), a4up = $("a4up");
   var rollToggle = $("rollToggle");
 
   // Roll with time (default): the x-axis keeps moving at real speed even
@@ -350,14 +397,20 @@
   var rollWithTime = true;
   rollToggle.addEventListener("click", function () {
     rollWithTime = !rollWithTime;
-    rollToggle.classList.toggle("on", rollWithTime);
-    rollToggle.textContent = rollWithTime ? "Roll with time" : "Pause on silence";
+    rollToggle.classList.toggle("on", !rollWithTime); // fixed label; highlighted only while pause-on-silence is active
   });
 
+  function setA4(v) {
+    v = Math.max(300, Math.min(600, Math.round(v)));
+    a4 = v;
+    a4input.value = v;
+  }
   a4input.addEventListener("change", function () {
     var v = parseFloat(a4input.value);
-    if (v && v > 300 && v < 600) a4 = v;
+    if (v && v > 300 && v < 600) setA4(v);
   });
+  a4down.addEventListener("click", function () { setA4(a4 - 1); });
+  a4up.addEventListener("click", function () { setA4(a4 + 1); });
 
   // ---------- tabs ----------
   var activeTab = "staff";
@@ -368,8 +421,10 @@
     staffCanvas.hidden = t !== "staff";
     contourCanvas.hidden = t !== "contour";
     scopeGutter.hidden = t !== "contour";
+    zoomControls.style.left = (t === "contour" ? 39 : 10) + "px";
     fitScopes();
     if (t === "staff") drawStaff(); else drawContour();
+    drawTimeAxis();
   }
   tabStaff.addEventListener("click", function () { setTab("staff"); });
   tabContour.addEventListener("click", function () { setTab("contour"); });
@@ -491,7 +546,10 @@
     }
     var c = Math.round(committedCentsEMA);
     var freq = a4 * Math.pow(2, (committedMidi + committedCentsEMA / 100 - 69) / 12);
-    liveNoteName.textContent = noteLabel(committedMidi);
+    var pcIdx = pc(committedMidi);
+    var letter = NOTE_NAMES[pcIdx].replace("#", "");
+    var oct = midiOctave(committedMidi);
+    liveNoteName.innerHTML = letter + (SHARP_BY_PC[pcIdx] ? "<sup>#</sup>" : "") + "<sub>" + oct + "</sub>";
     liveNoteCents.textContent = (c > 0 ? "+" : "") + c + "¢";
     liveNoteFreq.textContent = freq.toFixed(1) + "Hz";
     var inTune = Math.abs(c) <= 8;
@@ -517,11 +575,12 @@
 
   var sessionStarted = false;
   var panelH = 0;
+  var AXIS_H = 18;
   var followMode = true, lastProgScrollAt = 0;
 
   function fitScopes() {
     var rect = scopeScroll.getBoundingClientRect();
-    panelH = rect.height;
+    panelH = scopeCanvases.getBoundingClientRect().height || (rect.height - AXIS_H);
     resizeCanvasesToWidth(Math.max(rect.width, usedWidthPx()));
   }
   window.addEventListener("resize", fitScopes);
@@ -534,10 +593,10 @@
     if (Math.abs(px - lastCanvasWidthPx) < 4) return;
     lastCanvasWidthPx = px;
     scopeInner.style.width = px + "px";
-    [ [contourCanvas, contourCtx], [staffCanvas, staffCtx] ].forEach(function (t) {
-      var cv = t[0], ctx = t[1];
-      cv.width = px * dpr; cv.height = panelH * dpr;
-      cv.style.width = px + "px"; cv.style.height = panelH + "px";
+    [ [contourCanvas, contourCtx, panelH], [staffCanvas, staffCtx, panelH], [timeAxisCanvas, timeAxisCtx, AXIS_H] ].forEach(function (t) {
+      var cv = t[0], ctx = t[1], h = t[2];
+      cv.width = px * dpr; cv.height = h * dpr;
+      cv.style.width = px + "px"; cv.style.height = h + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     });
   }
@@ -555,11 +614,12 @@
   // ---------- staff geometry (compact, fixed spacing; 2 ledger-guide lines each side) ----------
   function staffLayout() {
     var halfSpacing = 13;
-    var reserveBelow = 6, reserveAbove = 6; // 3 ledger lines each side
-    var contentHalfSteps = 8 + reserveAbove + reserveBelow;
-    var contentHeight = contentHalfSteps * halfSpacing;
-    var topPad = Math.max(6, (panelH - contentHeight) / 2);
-    var bottomY = panelH - topPad - reserveBelow * halfSpacing;
+    // Pinned near the top (not centered): on a tall phone panel, centering
+    // left the staff floating mid-screen surrounded by empty space, making
+    // the ledger lines easy to miss. bottomY is a fixed distance from the
+    // panel's top edge, independent of panelH.
+    var topMargin = 28;
+    var bottomY = topMargin + 14 * halfSpacing; // clears the top ledger line (step 14)
     return { halfSpacing: halfSpacing, bottomY: bottomY };
   }
   function staffY(midi) {
@@ -568,10 +628,26 @@
     return g.bottomY - step * g.halfSpacing;
   }
 
+  // vertical grid lines at every beat, per the current bpm (e.g. 60 bpm = 1 line/sec)
+  function drawBeatGrid(ctx, w, y0, y1) {
+    var bm = 60000 / bpm;
+    if (bm < 4) return;
+    ctx.strokeStyle = "#ffffff14";
+    ctx.lineWidth = 1;
+    var firstK = Math.floor(windowStart / bm);
+    for (var k = firstK; k < firstK + 100000; k++) {
+      var x = xOf(k * bm);
+      if (x > w + 5) break;
+      if (x < -5) continue;
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    }
+  }
+
   function drawStaff() {
     var w = lastCanvasWidthPx, h = panelH;
     staffCtx.clearRect(0, 0, w, h);
     var g = staffLayout();
+    if (rollWithTime) drawBeatGrid(staffCtx, w, 0, h);
 
     // 2 faint ledger-guide lines each side, always visible
     staffCtx.strokeStyle = "#f2ead933";
@@ -627,10 +703,7 @@
       var gy = yOfCents(c);
       contourCtx.beginPath(); contourCtx.moveTo(0, gy); contourCtx.lineTo(w, gy); contourCtx.stroke();
     }
-    contourCtx.strokeStyle = "#ffffff0c";
-    for (var gx = 0; gx < w; gx += PX_PER_SEC) {
-      contourCtx.beginPath(); contourCtx.moveTo(gx, top); contourCtx.lineTo(gx, top + bandH); contourCtx.stroke();
-    }
+    if (rollWithTime) drawBeatGrid(contourCtx, w, top, top + bandH);
 
     contourCtx.lineWidth = 2;
     contourCtx.font = "600 12px 'JetBrains Mono', monospace";
@@ -651,16 +724,54 @@
       contourCtx.fillStyle = "#f2ead9";
       contourCtx.fillText(noteLabel(seg.midi), Math.max(2, x0 + 3), Math.max(12, yOfCents(seg.points[0].cents) - 7));
     }
+  }
 
+  // ---------- time axis (mm:ss) along the bottom of both panels ----------
+  function pickTickIntervalSec() {
+    var options = [1, 2, 5, 10, 15, 30, 60];
+    for (var i = 0; i < options.length; i++) {
+      if (options[i] * PX_PER_SEC >= 45) return options[i];
+    }
+    return 60;
+  }
+  function formatTime(sec) {
+    sec = Math.max(0, Math.round(sec));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function drawTimeAxis() {
+    var w = lastCanvasWidthPx, h = AXIS_H;
+    timeAxisCtx.clearRect(0, 0, w, h);
+    var intervalMs = pickTickIntervalSec() * 1000;
+    var firstK = Math.floor(windowStart / intervalMs);
+    timeAxisCtx.strokeStyle = "#f2ead955";
+    timeAxisCtx.fillStyle = "#a89a80";
+    timeAxisCtx.font = "500 9px 'JetBrains Mono', monospace";
+    timeAxisCtx.textAlign = "center";
+    for (var k = firstK; k < firstK + 100000; k++) {
+      var tMs = k * intervalMs;
+      var x = xOf(tMs);
+      if (x > w + 5) break;
+      if (x < -5) continue;
+      timeAxisCtx.beginPath(); timeAxisCtx.moveTo(x, 0); timeAxisCtx.lineTo(x, 4); timeAxisCtx.stroke();
+      timeAxisCtx.fillText(formatTime(tMs / 1000), x, h - 3);
+    }
   }
 
   // ---------- auto-follow scrolling ----------
+  // Persistent toggle: tap it anytime to clamp to the latest entries and
+  // keep following; scrolling away manually turns it off automatically.
+  function setFollowMode(on) {
+    followMode = on;
+    liveBtn.classList.toggle("on", on);
+    liveBtn.textContent = on ? "● following live" : "● snap to live";
+    if (on) followScroll();
+  }
   scopeScroll.addEventListener("scroll", function () {
     if (performance.now() - lastProgScrollAt < 60) return;
-    followMode = false;
-    liveBtn.hidden = false;
+    setFollowMode(false);
   });
-  liveBtn.addEventListener("click", function () { followMode = true; liveBtn.hidden = true; });
+  liveBtn.addEventListener("click", function () { setFollowMode(true); });
   function followScroll() {
     if (!followMode) return;
     lastProgScrollAt = performance.now();
@@ -668,13 +779,13 @@
   }
 
   // ---------- tempo: manual dial + explicit auto-find ----------
-  var bpm = 90;
+  var bpm = 60;
   function setBpmDisplay(v) {
     bpm = Math.max(30, Math.min(260, Math.round(v)));
     beatNum.textContent = bpm;
     startManualLabel.textContent = "@ " + bpm + " bpm";
   }
-  setBpmDisplay(90);
+  setBpmDisplay(60);
 
   beatUp.addEventListener("click", function () { setBpmDisplay(bpm + 2); });
   beatDown.addEventListener("click", function () { setBpmDisplay(bpm - 2); });
@@ -802,6 +913,7 @@
     }
 
     if (activeTab === "staff") drawStaff(); else drawContour();
+    drawTimeAxis();
     followScroll();
 
     requestAnimationFrame(loop);
@@ -809,6 +921,7 @@
 
   fitScopes();
   drawStaff();
+  drawTimeAxis();
 
 })();
 </script>
