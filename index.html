@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1424">
 <title>Tuner</title>
-<link rel="icon" href="logo.png">
+<link rel="icon" href="icon.jpg">
+<link rel="apple-touch-icon" href="icon.jpg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tuner">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,20 +54,47 @@
 
   #app { display: flex; flex-direction: column; height: 100%; }
 
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 8px;
-    gap: 8px;
-    flex: 0 0 auto;
+  /* ---- settings: A4, tempo, note-name system, behind the gear button ---- */
+  #settingsPanel {
+    position: fixed; inset: 0; z-index: 50;
+    background: #0b1424cc;
+    display: flex; align-items: center; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px 16px;
   }
+  #settingsCard {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px; width: 100%; max-width: 360px;
+    display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 12px 32px #00000066;
+  }
+  #settingsCard h2 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
+  #settingsClose { justify-content: center; margin-top: 6px; }
+
+  /* ---- book practice: piece picker, replaces the old dropdown ---- */
+  #piecePicker {
+    position: fixed; inset: 0; z-index: 50;
+    background: #0b1424cc;
+    display: flex; align-items: center; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px 16px;
+  }
+  #piecePickerCard {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px; width: 100%; max-width: 360px; max-height: 80vh;
+    display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 12px 32px #00000066;
+  }
+  #piecePickerCard h2 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
+  #piecePickerList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  #piecePickerList button {
+    width: 100%; justify-content: flex-start; text-align: left;
+    background: var(--panel-2); font-size: 13px; padding: 12px 14px;
+  }
+  #piecePickerClose { justify-content: center; margin-top: 2px; }
   .headerPill {
-    font-size: 15px; color: var(--fg-dim); background: var(--panel);
+    font-size: 15px; color: var(--fg-dim); background: var(--panel-2);
     border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px 9px 16px;
     display: flex; align-items: center; gap: 10px;
-    flex: 1 1 0; justify-content: center; min-width: 0;
+    flex: 0 0 auto; width: 100%; justify-content: space-between; min-width: 0;
   }
   #a4 input {
     width: 48px; background: transparent; border: none; color: var(--fg);
@@ -81,22 +112,20 @@
   }
   #beatHeader #beatNum.pulse { background: var(--accent); color: #1c1200; }
   .bpmLabel { font-size: 13px; color: var(--fg-dim); }
+  #notationToggle { font-size: 12px; padding: 7px 12px; }
   .stepBtn {
     width: 44px; height: 34px; border-radius: 999px; padding: 0;
     display: flex; align-items: center; justify-content: center;
     font-size: 18px; background: var(--panel-2); border: 1px solid var(--line);
     color: var(--fg); flex: 0 0 auto;
   }
-  @media (max-width: 480px) {
-    header { gap: 6px; padding-left: 10px; padding-right: 10px; }
-    .headerPill { font-size: 12px; padding: 6px 7px 6px 9px; gap: 5px; }
-    #a4 input { width: 32px; font-size: 13px; }
-    #beatHeader #beatNum { font-size: 13px; }
-    .bpmLabel { font-size: 10px; }
-    .stepBtn { width: 27px; height: 25px; font-size: 13px; }
-  }
+  #settingsBtn { justify-content: center; }
+  #settingsGear { font-size: 34px; line-height: 1; }
 
-  #main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 16px; gap: 6px; }
+  #main {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 0; gap: 6px;
+  }
 
   /* ---- slim control bar: Record/Pause/Stop on top, live note readout below ---- */
   #controlBar {
@@ -111,14 +140,14 @@
     align-items: center;
     gap: 10px;
   }
-  #pieceSelect {
-    order: 3; flex: 1 1 100%;
-    background: var(--panel); border: 1px solid var(--line); color: var(--fg);
-    border-radius: 10px; padding: 9px 10px;
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  #actionRow { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  #tempoReadout {
+    display: flex; flex-direction: column; gap: 1px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-dim);
+    letter-spacing: 0.01em; white-space: nowrap; text-align: right; flex: 0 0 auto;
   }
-  #actionRow { display: flex; flex: 0 0 auto; }
-  #preStart, #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 162px; }
+  #preStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  #postStart { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; width: 162px; }
   button.startBtn {
     flex: 1 1 0;
     min-width: 0;
@@ -128,6 +157,7 @@
     padding: 8px 6px;
     line-height: 1.25;
   }
+  button.startBtn.square { flex: 0 0 auto; width: 54px; height: 54px; padding: 0; justify-content: center; }
   button.startBtn .l1 { font-size: 11.5px; font-weight: 700; }
   button.startBtn .l2 { font-size: 9.5px; font-weight: 400; color: inherit; opacity: 0.85; }
 
@@ -168,8 +198,12 @@
 
   /* ---- tab switcher ---- */
   #tabBar { flex: 0 0 auto; display: flex; gap: 6px; }
-  #tabBar button { flex: 1 1 0; justify-content: center; font-size: 11.5px; }
+  #tabBar button {
+    flex: 1 1 0; flex-direction: column; justify-content: center;
+    gap: 1px; font-size: 11.5px; line-height: 1.25; text-align: center;
+  }
   #tabBar button.on { background: var(--accent); border-color: var(--accent); color: #1c1200; font-weight: 700; }
+  #tabBook .l2 { font-size: 9.5px; font-weight: 400; opacity: 0.85; }
 
   /* ---- book practice: scrollable "what to play next" reference strip ---- */
   #bookRefPanel {
@@ -188,26 +222,6 @@
     font-size: 9.5px; padding: 6px 10px;
   }
   #bookRefLiveBtn:not(.on) { background: #13213cdd; }
-
-  /* ---- book practice on a phone: drop everything but the two panels,
-     and fold the live note readout into the reference strip's corner ---- */
-  @media (max-width: 480px) {
-    body.book-compact header { display: none; }
-    body.book-compact #controlBar { justify-content: center; }
-    body.book-compact #zoomControls,
-    body.book-compact #rollToggle,
-    body.book-compact #pitchScaleToggle,
-    body.book-compact #sensToggle,
-    body.book-compact #liveBtn { display: none; }
-    body.book-compact #bookRefPanel #liveNote {
-      position: absolute; top: 6px; left: 8px; z-index: 4;
-      background: #0b1424cc; border-radius: 8px; padding: 3px 8px 4px;
-      gap: 5px; max-width: calc(100% - 16px);
-    }
-    body.book-compact #bookRefPanel #liveNoteName { font-size: 20px; }
-    body.book-compact #bookRefPanel #liveNoteCents { font-size: 10px; }
-    body.book-compact #bookRefPanel #liveNoteFreq { font-size: 8px; }
-  }
 
   /* ---- scope panel ---- */
   #scopeOuter {
@@ -253,19 +267,13 @@
     position: absolute; top: 8px; right: 10px; z-index: 3;
     font-size: 9.5px; padding: 6px 10px;
   }
-  #pitchScaleToggle {
+  #rhythmToggle {
     position: absolute; top: 40px; right: 10px; z-index: 3;
     font-size: 9.5px; padding: 6px 10px;
   }
-  #sensToggle {
-    position: absolute; top: 72px; right: 10px; z-index: 3;
-    font-size: 9.5px; padding: 6px 10px;
-  }
-  #rhythmToggle {
-    position: absolute; top: 104px; right: 10px; z-index: 3;
-    font-size: 9.5px; padding: 6px 10px;
-  }
-  #liveBtn:not(.on), #rollToggle:not(.on), #pitchScaleToggle:not(.on), #sensToggle, #rhythmToggle:not(.on) { background: #13213cdd; }
+  #liveBtn:not(.on), #rollToggle:not(.on), #rhythmToggle:not(.on) { background: #13213cdd; }
+  #pitchScaleRow #pitchScaleToggle { font-size: 12px; padding: 7px 12px; }
+  #gapRow #sensToggle { font-size: 12px; padding: 7px 12px; }
 
   button {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
@@ -301,21 +309,37 @@
 <body>
 <div id="app">
 
-  <header>
-    <div id="a4" class="headerPill">
-      <span>A4</span>
-      <input id="a4input" type="number" value="440" step="1" inputmode="numeric">
-      <button id="a4down" class="stepBtn">−</button>
-      <button id="a4up" class="stepBtn">+</button>
+  <div id="settingsPanel" hidden>
+    <div id="settingsCard">
+      <h2>Settings</h2>
+      <div id="a4" class="headerPill">
+        <span>A4</span>
+        <input id="a4input" type="number" value="440" step="1" inputmode="numeric">
+        <button id="a4down" class="stepBtn">−</button>
+        <button id="a4up" class="stepBtn">+</button>
+      </div>
+      <div id="beatHeader" class="headerPill">
+        <span>Beat</span>
+        <span id="beatNum" class="mono">60</span>
+        <span class="bpmLabel">bpm</span>
+        <button id="beatDown" class="stepBtn">−</button>
+        <button id="beatUp" class="stepBtn">+</button>
+      </div>
+      <div id="notationRow" class="headerPill">
+        <span>Notes</span>
+        <button id="notationToggle" class="on">Do Re Mi</button>
+      </div>
+      <div id="gapRow" class="headerPill">
+        <span title="How easily a brief dip between notes counts as a gap">Gap</span>
+        <button id="sensToggle">Med</button>
+      </div>
+      <div id="pitchScaleRow" class="headerPill">
+        <span title="Space staff lines by real pitch distance">Pitch-scaled lines</span>
+        <button id="pitchScaleToggle" class="on">On</button>
+      </div>
+      <button id="settingsClose" class="primary">Done</button>
     </div>
-    <div id="beatHeader" class="headerPill">
-      <span>Beat</span>
-      <span id="beatNum" class="mono">60</span>
-      <span class="bpmLabel">bpm</span>
-      <button id="beatDown" class="stepBtn">−</button>
-      <button id="beatUp" class="stepBtn">+</button>
-    </div>
-  </header>
+  </div>
 
   <div id="main">
     <div id="controlBar">
@@ -327,12 +351,16 @@
         </div>
       </div>
       <div id="actionRow">
+        <div id="tempoReadout">
+          <span id="tempoReadoutBpm">60 bpm</span>
+          <span id="tempoReadoutA4">A4 440Hz</span>
+        </div>
         <div id="preStart">
-          <button id="startManual" class="primary startBtn">
-            <span class="l1">Record</span><span class="l2" id="startManualLabel">@ 60 bpm</span>
+          <button id="startManual" class="primary startBtn square">
+            <span class="l1">Start</span>
           </button>
-          <button id="startAuto" class="startBtn">
-            <span class="l1">Record</span><span class="l2">auto tempo</span>
+          <button id="settingsBtn" class="startBtn square" title="A4, tempo, note names">
+            <span id="settingsGear">⚙</span>
           </button>
         </div>
         <div id="postStart" hidden>
@@ -344,9 +372,6 @@
           </button>
         </div>
       </div>
-      <select id="pieceSelect" hidden>
-        <option value="">Choose a piece…</option>
-      </select>
     </div>
 
     <div id="bookLog" hidden></div>
@@ -354,7 +379,15 @@
     <div id="tabBar">
       <button id="tabStaff" class="on">Staff</button>
       <button id="tabContour">Contour</button>
-      <button id="tabBook">Book Practice</button>
+      <button id="tabBook"><span class="l1">Book Practice</span><span class="l2" id="tabBookSub" hidden></span></button>
+    </div>
+
+    <div id="piecePicker" hidden>
+      <div id="piecePickerCard">
+        <h2>Choose a piece</h2>
+        <div id="piecePickerList"></div>
+        <button id="piecePickerClose">Cancel</button>
+      </div>
     </div>
 
     <div id="bookRefPanel" hidden>
@@ -386,9 +419,7 @@
         <button id="zoomIn" class="icon" title="Zoom in">+</button>
       </div>
       <button id="rollToggle" title="How the timeline moves through silence">Pause on silence</button>
-      <button id="pitchScaleToggle" title="Space staff lines by real pitch distance">Pitch-scaled lines</button>
-      <button id="sensToggle" title="How easily a brief dip between notes counts as a gap">Gap: Med</button>
-      <button id="rhythmToggle" title="Read each note's rhythm against the Beat/BPM setting (Staff only)">Rhythm</button>
+      <button id="rhythmToggle" title="Read each note's rhythm against the Beat/BPM setting (Staff only)">Detect Rhythm</button>
       <button id="liveBtn" class="on">● following live</button>
     </div>
 
@@ -399,8 +430,8 @@
 
 <div id="status">
   <img id="statusPortrait" src="portrait.jpg" alt="">
-  <h2>Microphone access needed</h2>
-  <p id="statusMsg">This tuner listens to your kamancheh through the microphone to show pitch and rhythm in real time. Nothing is recorded or sent anywhere — it all stays on this device.</p>
+  <h2>Tune your kamancheh</h2>
+  <p id="statusMsg">This app listens through your microphone to track pitch and rhythm for kamancheh, violin, and other bowed strings — live, as you play. Nothing is recorded or sent anywhere; it all stays on this device.</p>
   <button id="statusBtn" class="primary">Allow microphone</button>
 </div>
 
@@ -414,11 +445,15 @@
   var SHARP_BY_PC  = [false,true,false,true,false,false,true,false,true,false,true,false];
   var DIATONIC_INDEX = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
   var a4 = 440;
+  var noteSystem = "solfege"; // or "letters" — which names noteLabel()/the live readout use
   var MIDI_MIN = 36, MIDI_MAX = 100; // plausible kamancheh+voice range; clamps octave-error glitches
 
   function pc(midi) { return ((midi % 12) + 12) % 12; }
   function midiOctave(midi) { return Math.floor(midi / 12) - 1; }
-  function noteLabel(midi) { return NOTE_NAMES[pc(midi)] + midiOctave(midi); }
+  function pcName(pcIdx) {
+    return noteSystem === "letters" ? LETTER_BY_PC[pcIdx] + (SHARP_BY_PC[pcIdx] ? "#" : "") : NOTE_NAMES[pcIdx];
+  }
+  function noteLabel(midi) { return pcName(pc(midi)) + midiOctave(midi); }
   function diatonicStep(midi) {
     var letter = LETTER_BY_PC[pc(midi)];
     return DIATONIC_INDEX[letter] + 7 * midiOctave(midi);
@@ -473,14 +508,18 @@
 
   var preStart = $("preStart"), postStart = $("postStart");
   var beatUp = $("beatUp"), beatDown = $("beatDown"), beatNum = $("beatNum");
-  var startManual = $("startManual"), startManualLabel = $("startManualLabel");
-  var startAuto = $("startAuto");
+  var startManual = $("startManual");
+  var tempoReadoutBpm = $("tempoReadoutBpm"), tempoReadoutA4 = $("tempoReadoutA4");
+  var settingsBtn = $("settingsBtn"), settingsPanel = $("settingsPanel"), settingsClose = $("settingsClose");
+  var notationToggle = $("notationToggle");
   var stopBtn = $("stopBtn"), pauseBtn = $("pauseBtn"), pauseLabel = $("pauseLabel");
   var liveNoteName = $("liveNoteName"), liveNoteCents = $("liveNoteCents"), liveNoteFreq = $("liveNoteFreq");
   var controlBar = $("controlBar"), liveNote = $("liveNote");
 
   var tabStaff = $("tabStaff"), tabContour = $("tabContour"), tabBook = $("tabBook");
-  var pieceSelect = $("pieceSelect"), bookLog = $("bookLog");
+  var bookLog = $("bookLog");
+  var piecePicker = $("piecePicker"), piecePickerList = $("piecePickerList"), piecePickerClose = $("piecePickerClose");
+  var tabBookSub = $("tabBookSub");
   var bookRefPanel = $("bookRefPanel"), bookRefScroll = $("bookRefScroll");
   var bookRefCanvas = $("bookRefCanvas"), bookRefCtx = bookRefCanvas.getContext("2d");
   var bookRefLiveBtn = $("bookRefLiveBtn");
@@ -510,14 +549,15 @@
     rollToggle.classList.toggle("on", !rollWithTime); // fixed label; highlighted only while pause-on-silence is active
   });
 
-  // Pitch-scaled lines (Staff tab only, off by default): redraws the staff
+  // Pitch-scaled lines (Staff/Book tabs, on by default): redraws the staff
   // with line spacing proportional to real semitone distance instead of
   // equal diatonic spacing, and plots each dot at its true continuous
   // pitch instead of snapping to the nearest note.
-  var pitchScaled = false;
+  var pitchScaled = true;
   pitchScaleToggle.addEventListener("click", function () {
     pitchScaled = !pitchScaled;
     pitchScaleToggle.classList.toggle("on", pitchScaled);
+    pitchScaleToggle.textContent = pitchScaled ? "On" : "Off";
     updateGutterAndOffsets();
   });
 
@@ -525,6 +565,7 @@
     v = Math.max(300, Math.min(600, Math.round(v)));
     a4 = v;
     a4input.value = v;
+    tempoReadoutA4.textContent = "A4 " + v + "Hz";
   }
   a4input.addEventListener("change", function () {
     var v = parseFloat(a4input.value);
@@ -532,6 +573,17 @@
   });
   a4down.addEventListener("click", function () { setA4(a4 - 1); });
   a4up.addEventListener("click", function () { setA4(a4 + 1); });
+
+  settingsBtn.addEventListener("click", function () { settingsPanel.hidden = false; });
+  settingsClose.addEventListener("click", function () { settingsPanel.hidden = true; });
+  settingsPanel.addEventListener("click", function (e) { if (e.target === settingsPanel) settingsPanel.hidden = true; });
+
+  notationToggle.addEventListener("click", function () {
+    noteSystem = noteSystem === "solfege" ? "letters" : "solfege";
+    notationToggle.textContent = noteSystem === "solfege" ? "Do Re Mi" : "A B C D";
+    notationToggle.classList.toggle("on", noteSystem === "solfege");
+    updateGutterAndOffsets();
+  });
 
   // ---------- tabs ----------
   var activeTab = "staff";
@@ -542,8 +594,6 @@
     scopeGutter.hidden = false;
     scopeGutterNums.hidden = activeTab !== "contour";
     scopeGutterNotes.hidden = !isStaffLike(activeTab);
-    pitchScaleToggle.hidden = !isStaffLike(activeTab);
-    pieceSelect.hidden = activeTab !== "book";
     bookLog.hidden = activeTab !== "book" || !bookAttempts.length;
     bookRefPanel.hidden = activeTab !== "book";
     fitScopes();
@@ -552,21 +602,6 @@
     if (activeTab === "book") { fitBookRef(); drawBookRef(); followBookRef(); }
     drawTimeAxis();
   }
-  // On a phone, Book Practice needs both panels' full height, so this drops
-  // the header and the floating staff-corner buttons and folds the live
-  // note readout into the reference strip's own corner instead of its usual
-  // row in the control bar — only while actually on that tab, on that size.
-  function isMobileWidth() { return window.innerWidth <= 480; }
-  var bookCompact = false;
-  function updateBookCompactLayout() {
-    var want = activeTab === "book" && isMobileWidth();
-    if (want === bookCompact) return;
-    bookCompact = want;
-    document.body.classList.toggle("book-compact", want);
-    if (want) bookRefPanel.insertBefore(liveNote, bookRefPanel.firstChild);
-    else controlBar.insertBefore(liveNote, controlBar.firstChild);
-  }
-
   function setTab(t) {
     activeTab = t;
     tabStaff.classList.toggle("on", t === "staff");
@@ -574,12 +609,18 @@
     tabBook.classList.toggle("on", t === "book");
     staffCanvas.hidden = !isStaffLike(t);
     contourCanvas.hidden = t !== "contour";
-    updateBookCompactLayout();
     updateGutterAndOffsets();
   }
   tabStaff.addEventListener("click", function () { setTab("staff"); });
-  tabBook.addEventListener("click", function () { setTab("book"); });
   tabContour.addEventListener("click", function () { setTab("contour"); });
+  tabBook.addEventListener("click", function () {
+    var wasActive = activeTab === "book";
+    setTab("book");
+    // tapping it again (or landing here with nothing loaded yet) opens the
+    // picker — there's no dropdown anymore, so this is the only way in
+    if (!wasActive && !currentPiece) openPiecePicker();
+    else if (wasActive) openPiecePicker();
+  });
 
   // ---------- audio graph ----------
   var audioCtx = null, analyser = null, sourceNode = null, gainNode = null, buf = null;
@@ -596,8 +637,8 @@
   initStatusGate();
 
   // requestMic(): just grants mic access and starts live pitch detection.
-  // It does NOT start a recorded session — that happens via the Start
-  // buttons in the control bar (startManual / startAuto).
+  // It does NOT start a recorded session — that happens via the Record
+  // button in the control bar (startManual).
   function requestMic() {
     setStatus("Requesting microphone…");
     navigator.mediaDevices.getUserMedia({
@@ -665,7 +706,6 @@
     // (see beginSession's `if (!sessionStarted)` guard).
     sessionStarted = false;
     sessionPaused = false;
-    autoFinding = false;
     preStart.hidden = false;
     postStart.hidden = true;
     liveNoteName.textContent = "–";
@@ -732,7 +772,7 @@
     var c = Math.round(committedCentsEMA);
     var freq = a4 * Math.pow(2, (committedMidi + committedCentsEMA / 100 - 69) / 12);
     var pcIdx = pc(committedMidi);
-    var letter = NOTE_NAMES[pcIdx].replace("#", "");
+    var letter = noteSystem === "letters" ? LETTER_BY_PC[pcIdx] : NOTE_NAMES[pcIdx].replace("#", "");
     var oct = midiOctave(committedMidi);
     liveNoteName.innerHTML = letter + (SHARP_BY_PC[pcIdx] ? "<sup>#</sup>" : "") + "<sub>" + oct + "</sub>";
     liveNoteCents.textContent = (c > 0 ? "+" : "") + c + "¢";
@@ -769,7 +809,7 @@
     NOISE_FLOOR = SENS_LEVELS[sensIdx].floor;
     SILENCE_HOLD_MS = SENS_LEVELS[sensIdx].hold;
     DIP_RATIO = SENS_LEVELS[sensIdx].dip;
-    sensToggle.textContent = "Gap: " + SENS_LEVELS[sensIdx].label;
+    sensToggle.textContent = SENS_LEVELS[sensIdx].label;
   }
   sensToggle.addEventListener("click", function () {
     sensIdx = (sensIdx + 1) % SENS_LEVELS.length;
@@ -797,7 +837,7 @@
     resizeCanvasesToWidth(Math.max(rect.width, usedWidthPx()));
     if (activeTab === "book") { fitBookRef(); drawBookRef(); followBookRef(); }
   }
-  window.addEventListener("resize", function () { updateBookCompactLayout(); fitScopes(); });
+  window.addEventListener("resize", fitScopes);
 
   function usedWidthPx() {
     var w = Math.min(MAX_SECONDS, activeMs / 1000) * PX_PER_SEC;
@@ -905,9 +945,36 @@
   function loadPieceIndex() {
     fetch("pieces/index.json").then(function (r) { return r.json(); }).then(function (list) {
       pieceIndex = list;
-      pieceSelect.innerHTML = '<option value="">Choose a piece…</option>' +
-        list.map(function (p, i) { return '<option value="' + i + '">' + p.title + '</option>'; }).join("");
+      renderPiecePickerList();
     }).catch(function () { setStatus("Couldn't load the piece list (pieces/index.json)."); });
+  }
+
+  function renderPiecePickerList() {
+    piecePickerList.innerHTML = "";
+    pieceIndex.forEach(function (p, i) {
+      var btn = document.createElement("button");
+      btn.textContent = p.title;
+      btn.addEventListener("click", function () { selectPiece(i); });
+      piecePickerList.appendChild(btn);
+    });
+  }
+
+  function openPiecePicker() { piecePicker.hidden = false; }
+  function closePiecePicker() { piecePicker.hidden = true; }
+  piecePickerClose.addEventListener("click", closePiecePicker);
+  piecePicker.addEventListener("click", function (e) { if (e.target === piecePicker) closePiecePicker(); });
+
+  function pieceShortLabel(data) {
+    var m = data.book && data.book.match(/(\d+)/);
+    return (m ? "Book " + m[1] : data.book || "Piece") + ": Ex. " + data.exercise_number;
+  }
+
+  function selectPiece(i) {
+    if (!pieceIndex[i]) return;
+    fetch("pieces/" + pieceIndex[i].file).then(function (r) { return r.json(); }).then(function (data) {
+      loadPiece(data);
+      closePiecePicker();
+    }).catch(function () { setStatus("Couldn't load that piece."); });
   }
 
   function loadPiece(data) {
@@ -922,19 +989,14 @@
     bookStartNote = 0; bookCursor = 0; bookEstBeatMs = null; bookWrongFlashUntil = 0;
     bookAttempts = [];
     renderBookLog();
+    tabBookSub.textContent = pieceShortLabel(data);
+    tabBookSub.hidden = false;
     setStatus('Loaded "' + data.title + '" — tap a note in the reference strip to start there, or press Record.');
     fitBookRef();
     drawBookRef();
     setBookRefFollow(true);
     if (activeTab === "book") drawStaff();
   }
-
-  pieceSelect.addEventListener("change", function () {
-    var i = parseInt(pieceSelect.value, 10);
-    if (isNaN(i) || !pieceIndex[i]) { currentPiece = null; return; }
-    fetch("pieces/" + pieceIndex[i].file).then(function (r) { return r.json(); }).then(loadPiece)
-      .catch(function () { setStatus("Couldn't load that piece."); });
-  });
 
   function setBookStart(i) {
     bookStartNote = i;
@@ -1539,7 +1601,7 @@
   function setBpmDisplay(v) {
     bpm = Math.max(30, Math.min(260, Math.round(v)));
     beatNum.textContent = bpm;
-    startManualLabel.textContent = "@ " + bpm + " bpm";
+    tempoReadoutBpm.textContent = bpm + " bpm";
   }
   setBpmDisplay(60);
 
@@ -1547,53 +1609,13 @@
   beatDown.addEventListener("click", function () { setBpmDisplay(bpm - 2); });
 
   startManual.addEventListener("click", function () {
-    autoFinding = false;
     if (!micRunning) { requestMic(); pendingAfterMic = function () { beginSession(); }; }
     else beginSession();
   });
 
   var pendingAfterMic = null;
-  var autoFinding = false, findDeadline = 0, recentOnsetReal = [];
 
-  var lastShownRemaining = -1;
-  function startAutoFind() {
-    recentOnsetReal = [];
-    autoFinding = true;
-    findDeadline = performance.now() + 5000;
-    lastShownRemaining = -1;
-    setStatus("Listening for a steady pulse… play a few even notes.");
-  }
-  startAuto.addEventListener("click", function () {
-    if (!micRunning) { requestMic(); pendingAfterMic = startAutoFind; }
-    else startAutoFind();
-  });
-
-  function pulseBeatNum() {
-    beatNum.classList.add("pulse");
-    clearTimeout(pulseBeatNum._t);
-    pulseBeatNum._t = setTimeout(function () { beatNum.classList.remove("pulse"); }, 250);
-  }
-
-  function trackAutoTempoOnset(nowReal) {
-    recentOnsetReal.push(nowReal);
-    if (recentOnsetReal.length > 6) recentOnsetReal.shift();
-    if (recentOnsetReal.length < 4) return;
-    var ivs = [];
-    for (var i = 1; i < recentOnsetReal.length; i++) ivs.push(recentOnsetReal[i] - recentOnsetReal[i - 1]);
-    var mean = ivs.reduce(function (a, b) { return a + b; }, 0) / ivs.length;
-    var variance = ivs.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / ivs.length;
-    var sd = Math.sqrt(variance);
-    if (mean > 180 && mean < 2200 && sd / mean < 0.12) {
-      setBpmDisplay(60000 / mean);
-      pulseBeatNum();
-      if (autoFinding) {
-        autoFinding = false;
-        if (!sessionStarted) beginSession("Tempo locked at " + bpm + " bpm — session started.");
-      }
-    }
-  }
-
-  // ---------- onset detection (feeds auto-tempo only) ----------
+  // ---------- onset detection ----------
   var lastRms = 0, onsetCooldown = 0;
 
   // closes out whatever note is currently being held (if any), pushing it to
@@ -1649,19 +1671,6 @@
     // blob to read off the staff graph, independent of silence detection.
     if (onsetNow && activeTab === "book" && sessionStarted && !sessionPaused && curSegment) {
       endCurrentSegment(activeMs);
-    }
-
-    if (onsetNow && autoFinding) trackAutoTempoOnset(now);
-    if (autoFinding) {
-      var remaining = Math.max(0, Math.ceil((findDeadline - now) / 1000));
-      if (remaining !== lastShownRemaining) {
-        lastShownRemaining = remaining;
-        setStatus("Listening for a steady pulse… " + remaining + "s");
-      }
-      if (now > findDeadline) {
-        autoFinding = false;
-        if (!sessionStarted) beginSession("Couldn't find a steady pulse — started at " + bpm + " bpm.");
-      }
     }
 
     if (!soundActive && wasActive) {
