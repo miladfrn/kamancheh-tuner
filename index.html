@@ -39,7 +39,7 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html, body { height: 100%; height: 100dvh; }
   body {
     margin: 0;
     background: var(--bg);
@@ -52,7 +52,7 @@
   }
   .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
-  #app { display: flex; flex-direction: column; height: 100%; }
+  #app { display: flex; flex-direction: column; height: 100%; height: 100dvh; }
 
   /* ---- settings: A4, tempo, note-name system, behind the gear button ---- */
   #settingsPanel {
@@ -182,10 +182,11 @@
     flex: 0 0 auto;
     background: var(--panel-2);
     border-top: 1px solid var(--line);
-    padding: 7px 16px max(7px, env(safe-area-inset-bottom, 0px));
+    padding: 5px 16px max(5px, env(safe-area-inset-bottom, 0px));
     margin: 6px -16px 0;
     overflow: hidden;
     white-space: nowrap;
+    line-height: 1.3;
   }
   #statusBarText {
     display: inline-block;
