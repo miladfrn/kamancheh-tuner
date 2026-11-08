@@ -140,9 +140,10 @@
     align-items: center;
     gap: 10px;
   }
+  #actionCol { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: 0 0 auto; }
   #actionRow { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
   #tempoReadout {
-    display: flex; flex-direction: column; gap: 1px;
+    display: flex; flex-direction: row; gap: 6px; align-items: center;
     font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-dim);
     letter-spacing: 0.01em; white-space: nowrap; text-align: right; flex: 0 0 auto;
   }
@@ -175,15 +176,29 @@
     color: var(--fg-dim);
   }
 
-  /* ---- bottom status bar ---- */
+  /* ---- bottom status bar: always exactly one row; a message too long to
+     fit circulates instead of wrapping ---- */
   #statusBar {
     flex: 0 0 auto;
     background: var(--panel-2);
     border-top: 1px solid var(--line);
     padding: 7px 16px max(7px, env(safe-area-inset-bottom, 0px));
     margin: 6px -16px 0;
+    overflow: hidden;
+    white-space: nowrap;
   }
-  #statusBarText { font-size: 11px; color: var(--fg-dim); font-family: 'JetBrains Mono', monospace; }
+  #statusBarText {
+    display: inline-block;
+    font-size: 11px; color: var(--fg-dim); font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  #statusBarText.marquee { animation: statusMarquee var(--marquee-dur, 8s) linear infinite; }
+  @keyframes statusMarquee {
+    0% { transform: translateX(0); }
+    15% { transform: translateX(0); }
+    85% { transform: translateX(var(--marquee-dist, 0)); }
+    100% { transform: translateX(var(--marquee-dist, 0)); }
+  }
 
   /* ---- book-practice attempt log ---- */
   #bookLog { flex: 0 0 auto; display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px; }
@@ -350,26 +365,28 @@
           <span id="liveNoteFreq">0Hz</span>
         </div>
       </div>
-      <div id="actionRow">
+      <div id="actionCol">
+        <div id="actionRow">
+          <div id="preStart">
+            <button id="startManual" class="primary startBtn square">
+              <span class="l1">Start</span>
+            </button>
+            <button id="settingsBtn" class="startBtn square" title="A4, tempo, note names">
+              <span id="settingsGear">⚙</span>
+            </button>
+          </div>
+          <div id="postStart" hidden>
+            <button id="pauseBtn" class="startBtn">
+              <span class="l1" id="pauseLabel">Pause</span><span class="l2">rec</span>
+            </button>
+            <button id="stopBtn" class="primary startBtn">
+              <span class="l1">Stop</span><span class="l2">mic</span>
+            </button>
+          </div>
+        </div>
         <div id="tempoReadout">
-          <span id="tempoReadoutBpm">60 bpm</span>
-          <span id="tempoReadoutA4">A4 440Hz</span>
-        </div>
-        <div id="preStart">
-          <button id="startManual" class="primary startBtn square">
-            <span class="l1">Start</span>
-          </button>
-          <button id="settingsBtn" class="startBtn square" title="A4, tempo, note names">
-            <span id="settingsGear">⚙</span>
-          </button>
-        </div>
-        <div id="postStart" hidden>
-          <button id="pauseBtn" class="startBtn">
-            <span class="l1" id="pauseLabel">Pause</span><span class="l2">rec</span>
-          </button>
-          <button id="stopBtn" class="primary startBtn">
-            <span class="l1">Stop</span><span class="l2">mic</span>
-          </button>
+          <span id="tempoReadoutBpm">Beat:60 bpm /</span>
+          <span id="tempoReadoutA4">A4:440Hz</span>
         </div>
       </div>
     </div>
@@ -379,7 +396,7 @@
     <div id="tabBar">
       <button id="tabStaff" class="on">Staff</button>
       <button id="tabContour">Contour</button>
-      <button id="tabBook"><span class="l1">Book Practice</span><span class="l2" id="tabBookSub" hidden></span></button>
+      <button id="tabBook"><span class="l1">Practice</span><span class="l2" id="tabBookSub" hidden></span></button>
     </div>
 
     <div id="piecePicker" hidden>
@@ -501,10 +518,21 @@
   // ---------- DOM refs ----------
   var $ = function (id) { return document.getElementById(id); };
   var statusEl = $("status"), statusMsg = $("statusMsg"), statusBtn = $("statusBtn");
-  var statusBarText = $("statusBarText");
+  var statusBar = $("statusBar"), statusBarText = $("statusBarText");
   var a4input = $("a4input");
 
-  function setStatus(text) { statusBarText.textContent = text; }
+  function setStatus(text) {
+    statusBarText.textContent = text;
+    statusBarText.classList.remove("marquee");
+    requestAnimationFrame(function () {
+      var overflow = statusBarText.scrollWidth - statusBar.clientWidth;
+      if (overflow > 4) {
+        statusBarText.style.setProperty("--marquee-dist", (-overflow - 24) + "px");
+        statusBarText.style.setProperty("--marquee-dur", Math.max(6, overflow / 40) + "s");
+        statusBarText.classList.add("marquee");
+      }
+    });
+  }
 
   var preStart = $("preStart"), postStart = $("postStart");
   var beatUp = $("beatUp"), beatDown = $("beatDown"), beatNum = $("beatNum");
@@ -565,7 +593,7 @@
     v = Math.max(300, Math.min(600, Math.round(v)));
     a4 = v;
     a4input.value = v;
-    tempoReadoutA4.textContent = "A4 " + v + "Hz";
+    tempoReadoutA4.textContent = "A4:" + v + "Hz";
   }
   a4input.addEventListener("change", function () {
     var v = parseFloat(a4input.value);
@@ -1601,7 +1629,7 @@
   function setBpmDisplay(v) {
     bpm = Math.max(30, Math.min(260, Math.round(v)));
     beatNum.textContent = bpm;
-    tempoReadoutBpm.textContent = bpm + " bpm";
+    tempoReadoutBpm.textContent = "Beat:" + bpm + " bpm /";
   }
   setBpmDisplay(60);
 
