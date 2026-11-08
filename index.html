@@ -201,16 +201,6 @@
     100% { transform: translateX(var(--marquee-dist, 0)); }
   }
 
-  /* ---- book-practice attempt log ---- */
-  #bookLog { flex: 0 0 auto; display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px; }
-  #bookLog .chip {
-    flex: 0 0 auto; white-space: nowrap;
-    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
-    padding: 5px 10px; border-radius: 999px;
-    background: var(--panel-2); border: 1px solid var(--line); color: var(--fg-dim);
-  }
-  #bookLog .chip.good { color: var(--string); border-color: var(--string); }
-  #bookLog .chip.bad { color: var(--accent); border-color: var(--accent); }
 
   /* ---- tab switcher ---- */
   #tabBar { flex: 0 0 auto; display: flex; gap: 6px; }
@@ -330,7 +320,7 @@
       <h2>Settings</h2>
       <div id="a4" class="headerPill">
         <span>A4</span>
-        <input id="a4input" type="number" value="440" step="1" inputmode="numeric">
+        <input id="a4input" type="number" value="434" step="1" inputmode="numeric">
         <button id="a4down" class="stepBtn">−</button>
         <button id="a4up" class="stepBtn">+</button>
       </div>
@@ -387,12 +377,11 @@
         </div>
         <div id="tempoReadout">
           <span id="tempoReadoutBpm">Beat:60 bpm /</span>
-          <span id="tempoReadoutA4">A4:440Hz</span>
+          <span id="tempoReadoutA4">A4:434Hz</span>
         </div>
       </div>
     </div>
 
-    <div id="bookLog" hidden></div>
 
     <div id="tabBar">
       <button id="tabStaff" class="on">Staff</button>
@@ -462,7 +451,7 @@
   var LETTER_BY_PC = ["C","C","D","D","E","F","F","G","G","A","A","B"];
   var SHARP_BY_PC  = [false,true,false,true,false,false,true,false,true,false,true,false];
   var DIATONIC_INDEX = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
-  var a4 = 440;
+  var a4 = 434;
   var noteSystem = "solfege"; // or "letters" — which names noteLabel()/the live readout use
   var MIDI_MIN = 36, MIDI_MAX = 100; // plausible kamancheh+voice range; clamps octave-error glitches
 
@@ -546,7 +535,6 @@
   var controlBar = $("controlBar"), liveNote = $("liveNote");
 
   var tabStaff = $("tabStaff"), tabContour = $("tabContour"), tabBook = $("tabBook");
-  var bookLog = $("bookLog");
   var piecePicker = $("piecePicker"), piecePickerList = $("piecePickerList"), piecePickerClose = $("piecePickerClose");
   var tabBookSub = $("tabBookSub");
   var bookRefPanel = $("bookRefPanel"), bookRefScroll = $("bookRefScroll");
@@ -623,7 +611,6 @@
     scopeGutter.hidden = false;
     scopeGutterNums.hidden = activeTab !== "contour";
     scopeGutterNotes.hidden = !isStaffLike(activeTab);
-    bookLog.hidden = activeTab !== "book" || !bookAttempts.length;
     bookRefPanel.hidden = activeTab !== "book";
     fitScopes();
     if (isStaffLike(activeTab)) renderGutterNotes();
@@ -744,13 +731,14 @@
   stopBtn.addEventListener("click", function () {
     if (audioCtx) audioCtx.close();
     micRunning = false;
+    var bookMsg = null;
     if (activeTab === "book") {
       endCurrentSegment(activeMs);
       realignBookAttempt();
-      logBookAttempt();
+      bookMsg = logBookAttempt();
     }
     endSession();
-    setStatus("Stopped.");
+    setStatus(bookMsg || "Stopped.");
   });
   pauseBtn.addEventListener("click", function () {
     sessionPaused = !sessionPaused;
@@ -969,7 +957,7 @@
   var bookCursor = 0;            // index of the note currently expected
   var bookEstBeatMs = null;      // rolling estimate of "one beat" in ms, learned from your last few notes
   var bookWrongFlashUntil = 0;   // performance.now() deadline for the red-cursor wrong-note flash
-  var bookAttempts = [];         // [{n, hits, total, pct}]
+  var bookAttemptCount = 0;      // just a counter for the status-bar message, not a stored list
 
   function loadPieceIndex() {
     fetch("pieces/index.json").then(function (r) { return r.json(); }).then(function (list) {
@@ -1016,8 +1004,7 @@
     currentPiece = { title: data.title, bpm: data.tempo.bpm, notes: notes };
     setBpmDisplay(data.tempo.bpm);
     bookStartNote = 0; bookCursor = 0; bookEstBeatMs = null; bookWrongFlashUntil = 0;
-    bookAttempts = [];
-    renderBookLog();
+    bookAttemptCount = 0;
     tabBookSub.textContent = pieceShortLabel(data);
     tabBookSub.hidden = false;
     setStatus('Loaded "' + data.title + '" — tap a note in the reference strip to start there, or press Record.');
@@ -1220,23 +1207,18 @@
     setBookRefFollow(true);
   }
 
+  // returns a result string for the status bar instead of keeping a growing
+  // list on screen — each Stop is just a one-line "Attempt N: ..." message
   function logBookAttempt() {
-    if (!currentPiece) return;
+    if (!currentPiece) return null;
     var relevant = currentPiece.notes.slice(bookStartNote);
     var hits = relevant.filter(function (n) { return n.status === "hit"; }).length;
     var resolved = relevant.filter(function (n) { return n.status === "hit" || n.status === "wrong-rhythm" || n.status === "missed"; }).length;
     var total = resolved;
-    if (total === 0) return;
-    bookAttempts.push({ n: bookAttempts.length + 1, hits: hits, total: total, pct: Math.round(hits / total * 100) });
-    renderBookLog();
-  }
-
-  function renderBookLog() {
-    bookLog.innerHTML = bookAttempts.map(function (a) {
-      var cls = a.pct >= 80 ? "good" : (a.pct < 50 ? "bad" : "");
-      return '<span class="chip ' + cls + '">#' + a.n + " · " + a.hits + "/" + a.total + " · " + a.pct + "%</span>";
-    }).join("");
-    bookLog.hidden = activeTab !== "book" || !bookAttempts.length;
+    if (total === 0) return null;
+    bookAttemptCount++;
+    var pct = Math.round(hits / total * 100);
+    return "Attempt " + bookAttemptCount + ": " + hits + "/" + total + " notes (" + pct + "%).";
   }
 
   // ---------- real engraving: filled/hollow noteheads, stems, flags ----------
